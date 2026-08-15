@@ -1,0 +1,13 @@
+{
+  "name": "sahayog-platform",
+  "version": "0.1.0",
+  "description": "SAHAYOG — Unified Multi-Agency Resource Deduplication & Allocation Platform",
+  "scripts": {
+    "dev:backend": "cd backend && python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "npx concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
