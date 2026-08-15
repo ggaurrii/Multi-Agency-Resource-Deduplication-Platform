@@ -168,6 +168,16 @@ export const sahayogApi = {
     }
   },
 
+  getNeed: async (id) => {
+    try {
+      const response = await api.get(`/needs/${id}`);
+      return response.data;
+    } catch (err) {
+      console.info(`[Sahayog API] GET /needs/${id} returned ${err.response?.status || 'Network Error'}.`);
+      return null;
+    }
+  },
+
   createNeed: async (data) => {
     const response = await api.post('/needs', data);
     return response.data;
