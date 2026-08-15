@@ -1,0 +1,130 @@
+
+=== TABLE 1 ===
+Document Version | 1.0
+Date | 15 August 2026
+Related Document | SAHAYOG_SRS.docx v1.0
+Status | Draft — for internal team / faculty mentor review
+
+=== TABLE 2 ===
+Version | Date | Author | Description
+1.0 | 15-Aug-2026 | Project Team | Initial draft: architecture, ER model, API spec, sprint roadmap
+
+=== TABLE 3 ===
+Component | Responsibility
+FastAPI REST Service | CRUD for agencies, resources, needs; auth; orchestrates calls to optimization/forecasting workers.
+WebSocket Service | Publishes real-time resource/need/allocation state changes to subscribed dashboard clients (FR-RT-01).
+Optimization Worker | Runs the OR-Tools-based matching algorithm on demand or on a schedule (FR-MAT-01–07).
+Forecasting Worker | Computes time-to-shortage estimates using scikit-learn models (FR-FOR-01–03).
+Auth Service | Issues/validates JWTs, enforces RBAC (FR-SEC-01–03, NFR-SEC-01–03).
+PostgreSQL + PostGIS | System of record; PostGIS supports nearest-resource geospatial queries.
+
+=== TABLE 4 ===
+Layer | Technology
+Frontend | React.js + Tailwind CSS + shadcn/ui + Recharts
+Maps / GIS | Leaflet + OpenStreetMap
+Backend | FastAPI (Python 3.11+)
+Database | PostgreSQL 15 + PostGIS extension
+Optimization | Google OR-Tools (CP-SAT / linear solver)
+ML / Forecasting | scikit-learn (linear/regression models for MVP)
+Real-time | WebSockets (FastAPI native) + PostgreSQL LISTEN/NOTIFY
+Auth | JWT (access + refresh) + RBAC middleware
+Containerization / Hosting | Docker; Vercel (frontend); Render/Railway (backend + DB)
+CI / Testing | GitHub Actions; Pytest (backend); Vitest/RTL (frontend)
+
+=== TABLE 5 ===
+Column | Type | Notes
+agency_id | UUID (PK) | —
+name | VARCHAR(120) | e.g., "NDRF Battalion 5"
+type | VARCHAR(40) | NDRF | ARMY | SDRF | NGO | HOSPITAL | STATE_AUTHORITY
+contact_info | JSONB | phone, email, address
+created_at | TIMESTAMPTZ | default now()
+
+=== TABLE 6 ===
+Column | Type | Notes
+user_id | UUID (PK) | —
+agency_id | UUID (FK -> agency) | nullable for SUPER_ADMIN
+name / email | VARCHAR | email unique, indexed
+role | VARCHAR(30) | SUPER_ADMIN | STATE_OPERATOR | AGENCY_ADMIN | AGENCY_STAFF
+password_hash | VARCHAR | bcrypt/argon2, never plaintext (NFR-SEC-01)
+
+=== TABLE 7 ===
+Column | Type | Notes
+district_id | UUID (PK) | —
+name / state | VARCHAR | e.g., Kota, Rajasthan
+geometry | GEOMETRY(Polygon,4326) | PostGIS boundary; centroid used for distance calc
+affected_population | INTEGER | used by forecasting module
+
+=== TABLE 8 ===
+Column | Type | Notes
+resource_id | UUID (PK) | —
+agency_id | UUID (FK) | owning agency (FR-DED-02)
+district_id | UUID (FK) | —
+resource_type | VARCHAR(40) | BOAT | AMBULANCE | GENERATOR | FOOD_PACKET | DRINKING_WATER | … (configurable, FR extensible)
+quantity / unit | NUMERIC / VARCHAR | e.g., 15 / "units", 5000 / "packets"
+location | GEOGRAPHY(Point,4326) | PostGIS point; drives distance ranking (FR-MAT-02)
+status | VARCHAR(20) | AVAILABLE | DEPLOYED | IN_TRANSIT | RESERVED | DAMAGED | EXPIRED
+expiry / updated_at | TIMESTAMPTZ | expiry nullable
+
+=== TABLE 9 ===
+Column | Type | Notes
+need_id | UUID (PK) | —
+district_id | UUID (FK) | —
+resource_type | VARCHAR(40) | matches resource.resource_type domain
+quantity_needed / quantity_fulfilled | NUMERIC | fulfilled updated as allocations are accepted
+priority | VARCHAR(10) | CRITICAL | HIGH | MEDIUM | LOW — derived (FR-PRI-01)
+deadline | TIMESTAMPTZ | drives priority derivation
+status | VARCHAR(20) | OPEN | PARTIALLY_MET | RESOLVED | EXPIRED
+
+=== TABLE 10 ===
+Column | Type | Notes
+allocation_id | UUID (PK) | —
+need_id | UUID (FK) | —
+status | VARCHAR(20) | PROPOSED | ACCEPTED | MODIFIED | REJECTED
+authorized_by | UUID (FK -> user) | nullable until authorized (FR-MAT-05)
+item_id / allocation_id / resource_id | UUID | allocation_item child rows
+quantity_allocated / distance_km | NUMERIC | per-resource split (FR-MAT-03)
+
+=== TABLE 11 ===
+Method | Endpoint | Description
+POST | /auth/login | Authenticate; returns access + refresh JWT.
+POST | /auth/refresh | Exchange refresh token for new access token.
+POST | /auth/logout | Revoke refresh token.
+
+=== TABLE 12 ===
+Method | Endpoint | Description
+GET | /resources?district_id=&resource_type=&status= | List resources, filterable; RBAC-scoped (FR-REG, FR-DED-02).
+POST | /resources | Create a resource record (FR-REG-01).
+PATCH | /resources/{id} | Update quantity/status; owning agency only (FR-REG-03).
+GET | /resources/pooled?district_id=&resource_type= | Deduplicated pooled totals by district/type (FR-DED-01).
+GET | /resources/nearby?lat=&lng=&resource_type=&radius_km= | PostGIS proximity search.
+
+=== TABLE 13 ===
+Method | Endpoint | Description
+GET | /needs?district_id=&status=&priority= | List needs, filterable (FR-REG-02).
+POST | /needs | Create a need; priority auto-derived (FR-PRI-01).
+PATCH | /needs/{id} | Update quantity/deadline/status.
+
+=== TABLE 14 ===
+Method | Endpoint | Description
+POST | /needs/{id}/match | Trigger the matching engine; returns a PROPOSED allocation (FR-MAT-01–04).
+GET | /allocations?status= | List allocations, filterable by status.
+POST | /allocations/{id}/authorize | Accept/modify a proposed allocation; sets resources IN_TRANSIT (FR-MAT-05/06).
+POST | /allocations/{id}/reject | Reject a proposed allocation; need remains OPEN.
+
+=== TABLE 15 ===
+Method | Endpoint | Description
+GET | /dashboard/summary | Aggregated surplus/deficit per district/resource type for the map view (FR-MAP-01–03).
+GET | /districts/{id}/forecast?resource_type= | Time-to-shortage estimate (FR-FOR-01).
+GET | /notifications?unread=true | List alerts for the current user's scope (FR-SEC-04/05).
+WS | /ws/dashboard | Authenticated WebSocket channel streaming resource/need/allocation change events (FR-RT-01).
+
+=== TABLE 16 ===
+Sprint | Theme | Key Deliverables
+0 | Setup & Schema | Repo scaffolding, Docker Compose (API + Postgres/PostGIS), DB schema + migrations, CI pipeline skeleton.
+1 | Auth & Core CRUD | JWT auth, RBAC middleware, Agency/User models, /resources and /needs CRUD endpoints (FR-REG).
+2 | Frontend Shell | React app shell, login flow, role-based routing, resource/need entry forms.
+3 | Deduplication Engine | Pooled-totals view/endpoint, per-agency breakdown, unused-surplus flagging (FR-DED-01–03,06).
+4 | Matching Engine v1 | Greedy nearest-first matching, PostGIS distance queries, allocation authorize/reject flow (FR-MAT-01–06).
+5 | Map & Dashboard | Leaflet map with status colour-coding, district drill-down panel, summary cards (FR-MAP-01–03).
+6 | Real-Time + Optimization Upgrade | WebSocket live updates (FR-RT-01–03); upgrade matching to OR-Tools CP-SAT (FR-MAT-07); duplicate-deployment detection (FR-DED-04/05).
+7 | Forecasting, Polish & Demo | Forecasting module (FR-FOR-01–03), notifications (FR-SEC-04/05), end-to-end flood-scenario demo data, UI polish, deployment, rehearsal.

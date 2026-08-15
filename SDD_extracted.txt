@@ -1,0 +1,94 @@
+SYSTEM DESIGN DOCUMENT
+Architecture · Database · API · Development Roadmap
+SAHAYOG
+Unified Multi-Agency Resource Deduplication & Allocation Platform
+Companion document to the Software Requirements Specification (SRS) v1.0
+
+—. Revision History
+
+Table of Contents
+
+
+1. Introduction
+1.1 Purpose
+This System Design Document (SDD) translates the requirements defined in SAHAYOG_SRS.docx v1.0 into a concrete technical design: system architecture, database schema, module-level design, API contract, and a sprint-wise development roadmap. It is the primary reference for implementation and code review.
+1.2 Scope
+This document covers the design of the SIH MVP (flood-relief scenario: 4 districts, 3 agency types, 5 resource types) and notes, where relevant, extension points for the full system vision described in SRS Section 6. It does not restate functional requirements in full — refer to the SRS for the authoritative requirement list (FR-xxx / NFR-xxx IDs used below match the SRS).
+1.3 Design Goals
+Correctness of the deduplication and matching logic over visual polish.
+Clear separation between the optimization/forecasting logic and the API layer, so algorithms can be swapped without changing contracts (supports SRS Section 5.4, Maintainability).
+A data model that treats resource_type and disaster_type as configurable values rather than hard-coded enums, so new disaster scenarios can be added without schema migration (supports SRS Section 6).
+A human-in-the-loop authorization step before any resource is marked IN TRANSIT (supports SRS Section 5.2, Safety).
+2. System Architecture
+2.1 High-Level Architecture
+SAHAYOG follows a layered pipeline architecture. Agency users submit data through a common API Gateway; that data flows through the Deduplication Engine, then the Matching & Optimization Engine, then the Priority & Forecasting module, before recommendations and live status reach the Command Centre Dashboard. Authorization actions from the dashboard flow back through the same gateway.
+
+Figure 2.1 — High-level layered architecture.
+2.2 Deployment / Component View
+The application is containerized (Docker) and deployed across three tiers: a static client tier, an application tier hosting the REST API, WebSocket service, and two background workers (optimization and forecasting), and a data tier.
+
+Figure 2.2 — Deployment and component diagram.
+Table 2.1 — Component responsibilities.
+2.3 Technology Stack
+Table 2.3 — Technology stack by layer.
+3. Database Design
+3.1 Entity-Relationship Diagram
+The core entities are Agency, User, District, Resource, Need, Allocation, AllocationItem, Notification, and AuditLog. Resource and Need are the two central tables the Deduplication and Matching engines operate over; Allocation/AllocationItem record the outcome of a match once a Command Centre operator authorizes it.
+
+Figure 3.1 — Entity-relationship diagram.
+3.2 Table Definitions
+3.2.1 agency
+3.2.2 user
+3.2.3 district
+3.2.4 resource
+3.2.5 need
+3.2.6 allocation & allocation_item
+3.2.7 notification & audit_log
+notification: notification_id, type (DUPLICATE_DEPLOYMENT | SHORTAGE_ALERT | FORECAST_ALERT), ref_id, ref_type, message, severity, created_at, read_at.
+audit_log: log_id, user_id, action, entity, entity_id, before/after snapshot (JSONB), timestamp — satisfies FR-REG-05.
+4. Module-Level Design
+4.1 Deduplication Engine
+Implemented as a database view / materialized aggregation rather than an application-level loop, for correctness and performance: GROUP BY (district_id, resource_type) over resource rows where status = 'AVAILABLE', summing quantity. Recomputed on every write via a trigger-backed refresh or a short-interval scheduled job (satisfies FR-DED-01/03).
+Conflict detection (FR-DED-04/05/06) runs as a separate scheduled job comparing recent resource/need writes within a configurable time and geography window and inserting Notification rows when thresholds are crossed.
+4.2 Matching & Optimization Engine
+A stateless service function: given a need_id, it (1) queries candidate resources of matching type and AVAILABLE status within a search radius, (2) computes distance via PostGIS ST_Distance, (3) builds a constrained allocation problem — minimize total distance-weighted cost subject to not exceeding each resource's available quantity and meeting the need's quantity — solved with OR-Tools' CP-SAT solver for the MVP scale, falling back to a greedy nearest-first heuristic if the solver times out. Output is a proposed Allocation + AllocationItem set with status PROPOSED, never auto-committed (FR-MAT-01–05).
+4.3 Priority & Forecasting Module
+Priority (FR-PRI-01) is a pure function of a need's deadline, recalculated on read/write — no ML needed. Forecasting (FR-FOR-01/02) uses a lightweight linear regression / moving-average model over simulated historical consumption per (district, resource_type), producing an estimated_depletion_time; when this falls under a configurable threshold, the module creates a synthetic "pre-emptive" need feeding into the same matching pipeline.
+4.4 Access Control Middleware
+A FastAPI dependency validates the JWT, loads the user's role and agency_id, and injects a scope object used by every route handler to filter queries (e.g., Agency Staff can only UPDATE resource rows where resource.agency_id == user.agency_id). This mirrors the requirement that authorization is enforced server-side, not just in the UI (NFR-SEC-02).
+4.5 Real-Time Update Service
+Uses PostgreSQL LISTEN/NOTIFY triggered by row-level changes on resource, need, and allocation tables; the WebSocket service subscribes to these channels and rebroadcasts scoped events to connected dashboard clients over authenticated WSS connections (FR-RT-01/02). Clients reconcile state via a REST fetch on reconnect if a gap is detected (FR-RT-03).
+5. Key Process Flow — Matching & Allocation
+This flow illustrates the end-to-end path from a new need being reported to the dashboard reflecting a resolved state, and is the sequence demonstrated live in the SIH prototype (see SRS Appendix C).
+
+Figure 5.1 — Matching engine process flow.
+6. API Design
+All endpoints are prefixed /api/v1 and require a bearer JWT unless noted. Responses are JSON; errors follow { "error": { "code": ..., "message": ... } }.
+6.1 Authentication
+6.2 Resources
+6.3 Needs
+6.4 Matching & Allocations
+6.5 Dashboard, Forecasting & Notifications
+6.6 Sample Payload — POST /needs/{id}/match response
+{
+  "allocation_id": "a1e2...", 
+  "need_id": "n001",
+  "status": "PROPOSED",
+  "items": [
+    { "resource_id": "r-ndrf-01", "agency": "NDRF", "quantity_allocated": 10, "distance_km": 35 },
+    { "resource_id": "r-army-04", "agency": "Army", "quantity_allocated": 12, "distance_km": 48 },
+    { "resource_id": "r-ngo-02",  "agency": "NGO X", "quantity_allocated": 8,  "distance_km": 12 }
+  ],
+  "quantity_requested": 30,
+  "quantity_covered": 30,
+  "unmet": 0
+}
+7. Development Roadmap — Sprint Plan
+An eight-sprint plan (assuming ~1 week sprints, adjustable to the hackathon timeline) takes the project from schema to demo-ready MVP, mirroring the phased build order recommended in the ideation notes (basic system → deduplication → matching → map → AI).
+Table 7.1 — Sprint-wise development roadmap.
+7.1 Definition of Done — MVP Demo
+All Critical-priority requirements from the SRS (FR-*/NFR-* marked Critical) are implemented and demonstrable.
+The 4-district / 3-agency / 5-resource-type flood scenario (SRS Appendix C) runs end-to-end: data entry → pooled totals → critical need → recommended allocation → authorization → map updates to RESOLVED.
+The system is deployed and reachable via a public URL for judges, with seeded demo data reset between runs.
+A. Appendix A — Traceability Note
+Functional and non-functional requirement IDs used throughout this document (FR-REG-xx, FR-DED-xx, FR-MAT-xx, FR-PRI-xx, FR-FOR-xx, FR-MAP-xx, FR-SEC-xx, FR-RT-xx, NFR-xx) correspond one-to-one with the requirement tables in SAHAYOG_SRS.docx, Sections 3 and 5. Any change to a requirement ID in the SRS should be reflected here to keep design and requirements traceable.

@@ -1,0 +1,152 @@
+SOFTWARE REQUIREMENTS SPECIFICATION
+(as per IEEE 830-1998 standard)
+SAHAYOG
+Unified Multi-Agency Resource Deduplication & Allocation Platform
+An Intelligent Inter-Agency Resource Orchestration Platform for Disaster Relief Operations
+
+—. Revision History
+
+Table of Contents
+
+
+1. Introduction
+1.1 Purpose
+This document specifies the software requirements for SAHAYOG, a multi-agency resource deduplication and allocation platform intended for use during disaster relief operations. It is written in accordance with the IEEE 830-1998 recommended practice for software requirements specifications and is intended to serve as the authoritative reference for the design, development, testing, and evaluation of the system, including its submission for the Smart India Hackathon (SIH).
+1.2 Document Conventions
+Requirements are uniquely identified using the prefix FR (Functional Requirement) or NFR (Non-Functional Requirement) followed by a section code and sequence number, e.g., FR-RES-01. Priority is classified as Critical (must be present for MVP demo), High, Medium, or Low (future scope). Boldface is used for defined terms on first use; such terms are also listed in the glossary (Appendix A).
+1.3 Intended Audience and Reading Suggestions
+This document is intended for the following readers:
+Development team members — for functional and non-functional requirements, and interface specifications (Sections 3–5).
+Faculty mentors and SIH evaluators — for scope, feasibility, and problem-solution alignment (Sections 1–2).
+UI/UX contributors — for external interface requirements (Section 4).
+Future collaborating agencies (NDRF, State Disaster Management Authorities, NGOs) — for a description of intended system behaviour and access model (Sections 2 and 3.6).
+Readers new to the project are advised to read Sections 1 and 2 in full before referring to specific functional areas of interest in Section 3.
+1.4 Project Scope
+SAHAYOG addresses a coordination failure common to large-scale disaster response: multiple responding agencies (NDRF, State Disaster Response Forces, the Army, NGOs, hospitals, and local relief organisations) independently hold and deploy resources with no shared visibility into what exists, where it is located, who owns it, and where it is genuinely needed. The consequence is simultaneous surplus in one location and critical shortage in another, along with duplicated procurement and duplicated deployment.
+The system's scope is defined at two levels:
+1.4.1 MVP Scope (SIH Prototype)
+The prototype demonstrates the complete core pipeline (data ingestion → unified registry → deduplication → matching/optimization → priority scoring → allocation recommendation → map-based tracking) constrained to a single, convincing flood-relief scenario:
+4 districts (simulated Rajasthan flood scenario)
+3 participating agency types: NDRF, Army, NGO (plus a State Authority command-centre view)
+5 resource types: boats, ambulances, generators, food packets, drinking water
+Simple demand-prediction using simulated historical consumption data
+1.4.2 Full System Vision (Post-MVP)
+Beyond the hackathon prototype, the architecture is intended to be resource-agnostic and disaster-agnostic, extensible to earthquakes, cyclones, landslides, fires, and epidemics; to a full national agency directory; to SMS/WhatsApp-based field data entry for low-connectivity zones; and to production-grade optimization and ML forecasting. These extensions are captured as future requirements in Section 6 and are explicitly out of scope for the MVP demonstration.
+What the system will NOT do: it will not replace agencies' own internal logistics/ERP systems, it will not perform autonomous resource dispatch without human sign-off, and in its MVP form it will not process live, authenticated feeds from real government systems (simulated/manually entered data is used for the demo).
+1.5 References
+IEEE Std 830-1998 — IEEE Recommended Practice for Software Requirements Specifications.
+National Disaster Management Authority (NDMA), Government of India — guidelines on disaster response coordination.
+PostGIS Documentation — spatial query reference for proximity-based matching.
+Google OR-Tools Documentation — constraint optimization reference for the matching engine.
+Project working notes: "Multi-agency resource deduplication platform" — internal SIH ideation document (source for this SRS).
+2. Overall Description
+2.1 Product Perspective
+SAHAYOG is a new, self-contained web-based platform; it is not a replacement for or modification of an existing system. It functions as a coordination layer that sits above individual agencies' own resource records: agencies (or their designated operators) enter or sync resource and requirement data into SAHAYOG, and the platform performs deduplication, matching, and visualization on top of that shared data. Conceptually the product can be described as "Google Maps + inventory management + intelligent matching" purpose-built for disaster response.
+High-level system context:
+Upstream actors: Agency field/data-entry operators (NDRF, Army, NGOs, State Authority, hospitals) who create resource and need records.
+The platform: unified registry, deduplication engine, matching/optimization engine, priority & forecasting module, real-time dashboard and map.
+Downstream actors: Command Centre operators who review recommendations and authorize transfers; field teams who execute transfers and update status.
+2.2 Product Functions
+A summary of major functions (each elaborated as a feature in Section 3):
+Resource & Needs Registration — agencies record resources they hold and districts/agencies record requirements, both tagged with type, quantity, location, and status.
+Unified Resource Registry & Deduplication — the system aggregates records from all agencies for a given resource type and location into a single, de-duplicated pool rather than treating each agency's inventory in isolation.
+Conflict Detection — automatic flagging of duplicate deployments, duplicate procurement, unused surplus, and projected shortages.
+Matching & Allocation Engine — given a need, the system searches all available matching resources and recommends an allocation across agencies based on distance, quantity, urgency, and resource status.
+Priority Scoring — every requirement is scored/classified (Critical / High / Medium / Low) based on deadline and severity, and this score drives the order in which the matching engine processes needs.
+Demand Forecasting — a simple predictive layer estimates when a resource will run out, based on current stock, consumption rate, and affected-population trends, and proposes pre-emptive transfers.
+Map & Dashboard Visualization — a live map of districts colour-coded by resource status (surplus/shortage/in-transit), with drill-down views per district.
+Role-Based Access Control — agencies see their own inventory plus the shared/public picture; the Command Centre sees the full operational picture.
+Real-Time Status Updates — resource and need status changes propagate to all connected dashboards without a page refresh.
+Notifications & Alerts — in-app (and future SMS/email/WhatsApp) alerts for critical shortages, duplicate deployments, and recommended transfers.
+2.3 User Classes and Characteristics
+Table 2.1 — User classes and characteristics.
+2.4 Operating Environment
+Client: modern web browsers (Chrome, Edge, Firefox — latest two major versions), responsive layout for desktop (command-centre use) and mobile/tablet (field data entry).
+Server: Linux-based cloud hosting (containerized via Docker); backend deployed on a platform such as Render/Railway; frontend deployed on Vercel or equivalent static hosting.
+Database: PostgreSQL with the PostGIS extension for geospatial queries.
+Network: designed to tolerate intermittent connectivity typical of disaster-affected regions; degrades gracefully to cached/last-known data when offline (future scope: offline-first mobile data capture).
+2.5 Design and Implementation Constraints
+The MVP must be demonstrable within the SIH prototype timeline; the matching engine will use OR-Tools-based constraint optimization or an equivalent lightweight optimization approach rather than a custom-trained large model.
+No large language model is required for core system functionality; the forecasting layer uses classical ML (e.g., scikit-learn / lightweight regression), not deep learning, for the MVP.
+The system must support at least three concurrent agency roles and one command-centre role in the demo build.
+All inter-service communication must use authenticated HTTPS; WebSocket channels must be authenticated before subscription.
+Data entered during the MVP demo is simulated/manually entered; no direct integration with live government data feeds is in scope.
+2.6 Assumptions and Dependencies
+It is assumed that participating agencies are willing to enter or expose resource data to a shared platform; the system does not assume real-time automatic sync from agencies' internal ERP/logistics systems in the MVP.
+It is assumed that approximate geographic coordinates (district/taluka-level, or GPS where available) are obtainable for each resource and need record.
+The demand-forecasting feature depends on the availability of at least simulated historical consumption data; without it, the system falls back to static current-stock vs. current-need comparisons.
+It is assumed that a human operator at the Command Centre authorizes any recommended transfer before it is treated as "in transit" — the system does not assume autonomous dispatch authority.
+3. System Features (Functional Requirements)
+Each feature below is described with its purpose, its stimulus/response behaviour, and its detailed functional requirements. Requirements marked Critical are required for the MVP demo; High/Medium/Low priority items may be implemented as time permits or deferred to the full-system roadmap (Section 6).
+3.1 Resource & Needs Registration
+Description: Allows authorized agency users to create, update, and retire records describing resources they hold, and to create/update records describing needs at a district or facility level.
+Stimulus/Response: An agency user submits a resource or need form → the system validates required fields (type, quantity, location, status/priority) → the record is persisted and becomes visible to the deduplication engine and, subject to RBAC, to other agencies.
+3.2 Unified Resource Registry & Deduplication Engine
+Description: The core differentiator of the platform. Rather than exposing each agency's inventory in isolation, the system aggregates all resource records of the same type within a defined geographic radius/district into a single pooled figure.
+3.3 Matching & Optimization Engine
+Description: Given an open need, the engine searches the unified registry for matching, available resources and proposes an allocation across one or more contributing agencies.
+Stimulus/Response: A need is created or its priority escalates → the engine is triggered (on-demand or on a scheduled interval) → candidate resources are filtered by type, availability, and distance → an allocation is computed and surfaced as a recommendation, not an automatic action.
+3.4 Priority Scoring & Demand Forecasting
+3.5 Map & Dashboard Visualization
+3.6 Access Control & Notifications
+3.7 Real-Time Updates
+4. External Interface Requirements
+4.1 User Interfaces
+A responsive web dashboard (React + Tailwind CSS) providing: login, role-appropriate landing view, resource/need entry forms, the interactive map, district drill-down panels, and an allocation-recommendation review screen.
+Government-portal-appropriate visual style: clear status colour coding (red/orange/green/blue), accessible contrast ratios, and data tables with sort/filter for command-centre users.
+Mobile-first simplified forms for field-level Agency Staff data entry.
+4.2 Hardware Interfaces
+No dedicated hardware interfaces are required for the MVP. The system is accessed exclusively through standard client devices (desktop, laptop, tablet, smartphone) with a network connection; no direct sensor, IoT, or embedded-device integration is in scope for the MVP (see Section 6 for future GPS/telemetry integration).
+4.3 Software Interfaces
+Table 4.1 — Software interfaces.
+4.4 Communications Interfaces
+All client–server communication shall use HTTPS/TLS.
+Real-time updates shall use WSS (secure WebSocket).
+Future scope: SMS/WhatsApp gateway integration for field alerts and low-connectivity data entry (Section 6).
+5. Non-Functional Requirements
+5.1 Performance Requirements
+5.2 Safety Requirements
+The system shall never automatically move a resource's status to IN TRANSIT without explicit human authorization (FR-MAT-05); it produces recommendations, not autonomous dispatch commands.
+The system shall clearly label all forecasted/predicted figures as estimates to avoid over-reliance on projected data for life-critical decisions.
+5.3 Security Requirements
+5.4 Software Quality Attributes
+Availability: the platform is intended for continuous operation during an active relief effort; the MVP targets no formal SLA, but the architecture should not preclude a future high-availability deployment.
+Usability: field-level forms must be completable by a non-technical user in under 2 minutes with minimal training.
+Maintainability: the matching/optimization logic shall be isolated behind a clear internal interface so the underlying algorithm can be upgraded (e.g., simple heuristic → OR-Tools model) without changing calling code.
+Extensibility: the data model shall treat resource type and disaster type as configurable values, not hard-coded enums, so new disaster scenarios (earthquake, cyclone, epidemic) can be supported without schema changes (see Section 6).
+Portability: the system shall be containerized (Docker) to allow deployment across different cloud environments.
+5.5 Business Rules
+A resource record may only be edited by users belonging to the owning agency, or by a Super Admin.
+A resource may not be included in more than one active (non-rejected) recommended allocation at the same time.
+A need is considered RESOLVED only when its fulfilled quantity, summed across accepted allocations, meets or exceeds its required quantity.
+Priority classification (Critical/High/Medium/Low) is derived automatically from the deadline field and may not be manually overridden except by a Command Centre operator, with the override logged.
+6. Other Requirements — Future Scope Beyond MVP
+The following are explicitly out of scope for the SIH MVP but are documented here to record the full product vision and to guide architectural decisions (e.g., keeping resource/disaster types configurable) so that the MVP does not need to be re-architected to support them later.
+Multi-disaster support: extend beyond flood scenarios to earthquakes, cyclones, landslides, fires, and epidemic response, each with disaster-specific resource taxonomies.
+National-scale agency directory and onboarding workflow for all NDRF battalions, SDRF units, Army formations, and registered NGOs.
+Live integration with agencies' internal ERP/logistics systems via secure APIs, replacing manual/simulated data entry.
+Offline-first mobile data capture for field operators in zones with no connectivity, syncing once connectivity is restored.
+SMS/WhatsApp-based alerting and lightweight data submission for low-bandwidth environments.
+Advanced ML forecasting (e.g., XGBoost/LightGBM models trained on historical disaster response data) replacing the MVP's simple statistical forecasting.
+Route optimization for physical transfer logistics (vehicle routing, ETA prediction) beyond straight-line/geodesic distance.
+Public-facing transparency dashboard for citizens and media, showing aggregated (non-sensitive) relief statistics.
+Formal integration with the National Disaster Management Authority (NDMA) reporting standards and formats.
+A. Appendix A — Glossary / Data Dictionary
+B. Appendix B — System Architecture Overview
+The system follows a layered pipeline architecture:
+Agencies (data sources): Army, NDRF, NGOs, State Authority — submit resource and need data.
+Data Layer: unified Resources and Needs tables (PostgreSQL + PostGIS).
+Deduplication Engine: aggregates resource records into pooled, district-level totals and flags conflicts.
+Matching & Optimization Engine: computes recommended allocations (OR-Tools-based).
+Priority / Prediction Layer: classifies need priority and forecasts shortages (scikit-learn).
+Command Centre Dashboard: map + tables for review, authorization, and monitoring (React + Leaflet, real-time via WebSocket).
+Recommended technology stack for the MVP:
+Table B.1 — Recommended MVP technology stack.
+C. Appendix C — MVP Demonstration Scenario
+For evaluation purposes, the prototype demonstration is built around a single, polished flood-relief scenario rather than attempting full disaster-type coverage:
+Scenario: a flood affects 4 Rajasthan districts.
+Agencies: NDRF, Army, and one NGO enter their available boats, ambulances, generators, food packets, and drinking water.
+Deduplication demo: the platform combines individually-entered agency inventories into one pooled figure per district (e.g., "50 boats available" instead of four separate agency counts).
+Matching demo: a district reports a critical need (e.g., 30 boats); the system identifies surplus in two other districts and recommends a specific split allocation weighted by distance and urgency.
+Outcome demo: the map updates from a red "CRITICAL — 0/30 available" state to a green "RESOLVED — 30/30 available" state, with the recommended transfers shown as in-transit routes.
+This scenario is intended to make the deduplication and matching capabilities — the platform's core differentiators — immediately visible to evaluators within a short demo window.
