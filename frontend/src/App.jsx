@@ -21,6 +21,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/pool" element={<ResourcePool />} />
+          <Route path="/resource-pool" element={<ResourcePool />} />
           <Route path="/needs" element={<Needs />} />
           <Route path="/matching" element={<Matching />} />
           <Route path="/allocations" element={<Allocations />} />
