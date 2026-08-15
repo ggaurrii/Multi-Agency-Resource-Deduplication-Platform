@@ -14,7 +14,8 @@ import {
   Zap,
   CheckCircle2,
   Clock,
-  ExternalLink
+  ExternalLink,
+  ShieldAlert
 } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import sahayogApi from '../services/api';
@@ -41,7 +42,7 @@ export default function Dashboard() {
       setAllocations(allocData?.items || []);
     } catch (err) {
       console.error('Error fetching dashboard summary:', err);
-      setError('Unable to reach backend API. Displaying cached command center metrics.');
+      setError('Unable to fetch live backend metrics. Showing prototype command center state.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -93,10 +94,25 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Development Mode Authorization Status Banner */}
+      {summary?.is_demo_fallback && (
+        <div className="p-3 bg-amber-950/80 border border-amber-800/80 text-amber-200 rounded-md text-xs font-mono flex items-center justify-between shadow-sm">
+          <div className="flex items-center space-x-2">
+            <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>DEV AUTH ACTIVE</strong> — Backend returned <code className="bg-amber-900 px-1 py-0.5 rounded text-amber-200">HTTP 403 Forbidden</code> (Live DB sync requires real JWT login). Displaying command center prototype metrics.
+            </span>
+          </div>
+          <span className="px-2 py-0.5 bg-amber-900 text-amber-300 rounded font-bold text-[10px] uppercase">
+            Prototype View
+          </span>
+        </div>
+      )}
+
       {error && (
-        <div className="p-3 bg-amber-900/30 border border-amber-700/60 rounded text-xs text-amber-200 flex items-center justify-between font-mono">
+        <div className="p-3 bg-rose-900/30 border border-rose-700/60 rounded text-xs text-rose-200 flex items-center justify-between font-mono">
           <span>⚠️ {error}</span>
-          <button onClick={() => setError(null)} className="underline text-amber-300">Dismiss</button>
+          <button onClick={() => setError(null)} className="underline text-rose-300">Dismiss</button>
         </div>
       )}
 
