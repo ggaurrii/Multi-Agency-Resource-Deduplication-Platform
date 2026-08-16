@@ -450,11 +450,11 @@ def seed_districts(session: Session) -> None:
     for d in DISTRICTS:
         existing = session.execute(select(District).where(District.id == d["id"])).scalar_one_or_none()
         if existing:
-            print(f"  ⏭  District '{d['name']}' already exists")
+            print(f"  [EXISTS] District '{d['name']}' already exists")
             continue
         district = District(**d)
         session.add(district)
-        print(f"  ✅ District '{d['name']}' created")
+        print(f"  [OK] District '{d['name']}' created")
 
 
 def seed_agencies(session: Session) -> None:
@@ -524,10 +524,92 @@ def seed_needs(session: Session) -> None:
         print(f"  ✅ Need '{n['resource_type']}' priority={n['priority']} status={n['status']} created")
 
 
+def seed_notifications(session: Session) -> None:
+    """Seed initial operational notifications."""
+    notifs = [
+        {
+            "id": make_id("notif-1"),
+            "type": "CRITICAL_NEED",
+            "message": "CRITICAL REQUIREMENT: 30 BOAT needed in Baran district immediately (deadline < 2 hrs)",
+            "severity": "CRITICAL",
+            "ref_id": make_id("need-baran-boats-critical"),
+            "ref_type": "need",
+            "target_agency_id": None,
+        },
+        {
+            "id": make_id("notif-2"),
+            "type": "SHORTAGE_ALERT",
+            "message": "HIGH DEFICIT: Kota drinking water requirement remains partially unmet (12,000 L deficit)",
+            "severity": "HIGH",
+            "ref_id": make_id("need-kota-water-partial"),
+            "ref_type": "need",
+            "target_agency_id": make_id("agency-state"),
+        },
+        {
+            "id": make_id("notif-3"),
+            "type": "FORECAST_ALERT",
+            "message": "FORECAST ALERT: Impending rainfall over Hadoti region expected to increase boat demand by 40%",
+            "severity": "MEDIUM",
+            "ref_id": None,
+            "ref_type": None,
+            "target_agency_id": None,
+        },
+    ]
+    for notif in notifs:
+        existing = session.execute(select(Notification).where(Notification.id == notif["id"])).scalar_one_or_none()
+        if existing:
+            print(f"  ⏭  Notification '{notif['type']}' already exists")
+            continue
+        n_obj = Notification(**notif)
+        session.add(n_obj)
+        print(f"  ✅ Notification '{notif['type']}' created")
+
+
+def seed_audit_logs(session: Session) -> None:
+    """Seed initial operational audit entries."""
+    logs = [
+        {
+            "id": make_id("audit-1"),
+            "user_id": make_id("user-state-op1"),
+            "action": "CREATE",
+            "entity": "need",
+            "entity_id": make_id("need-baran-boats-critical"),
+            "before_state": None,
+            "after_state": {"resource_type": "BOAT", "quantity_needed": 30, "priority": "CRITICAL", "status": "OPEN"},
+        },
+        {
+            "id": make_id("audit-2"),
+            "user_id": make_id("user-state-op1"),
+            "action": "CREATE",
+            "entity": "need",
+            "entity_id": make_id("need-jhalawar-food-high"),
+            "before_state": None,
+            "after_state": {"resource_type": "FOOD_PACKET", "quantity_needed": 10000, "priority": "HIGH", "status": "OPEN"},
+        },
+        {
+            "id": make_id("audit-3"),
+            "user_id": make_id("user-ndrf-admin"),
+            "action": "CREATE",
+            "entity": "resource",
+            "entity_id": make_id("res-ndrf-boats-kota"),
+            "before_state": None,
+            "after_state": {"resource_type": "BOAT", "quantity_total": 20, "quantity_available": 20},
+        },
+    ]
+    for log in logs:
+        existing = session.execute(select(AuditLog).where(AuditLog.id == log["id"])).scalar_one_or_none()
+        if existing:
+            print(f"  ⏭  AuditLog '{log['action']}' on {log['entity']} already exists")
+            continue
+        l_obj = AuditLog(**log)
+        session.add(l_obj)
+        print(f"  ✅ AuditLog '{log['action']}' created")
+
+
 def run_seed() -> None:
     """Execute all seed operations in order."""
     print("=" * 60)
-    print("SAHAYOG — Seeding demo data")
+    print("SAHAYOG -- Seeding demo data")
     print("=" * 60)
 
     from sqlalchemy.orm import sessionmaker
@@ -536,38 +618,47 @@ def run_seed() -> None:
 
     with SessionLocal() as session:
         try:
-            print("\n📍 Seeding districts...")
+            print("\nSeeding districts...")
             seed_districts(session)
             session.flush()
 
-            print("\n🏢 Seeding agencies...")
+            print("\nSeeding agencies...")
             seed_agencies(session)
             session.flush()
 
-            print("\n👤 Seeding users...")
+            print("\nSeeding users...")
             seed_users(session)
             session.flush()
 
-            print("\n📦 Seeding resources...")
+            print("\nSeeding resources...")
             seed_resources(session)
             session.flush()
 
-            print("\n🚨 Seeding needs...")
+            print("\nSeeding needs...")
             seed_needs(session)
+            session.flush()
+
+            print("\nSeeding notifications...")
+            seed_notifications(session)
+            session.flush()
+
+            print("\nSeeding audit logs...")
+            seed_audit_logs(session)
 
             session.commit()
             print("\n" + "=" * 60)
-            print("✅ Seed data committed successfully!")
+            print("Seed data committed successfully!")
             print("=" * 60)
 
             # Print summary
-            from sqlalchemy import func as sa_func
             counts = {
                 "Districts": session.query(District).count(),
                 "Agencies": session.query(Agency).count(),
                 "Users": session.query(User).count(),
                 "Resources": session.query(Resource).count(),
                 "Needs": session.query(Need).count(),
+                "Notifications": session.query(Notification).count(),
+                "AuditLogs": session.query(AuditLog).count(),
             }
             print("\nSummary:")
             for entity, count in counts.items():
@@ -575,7 +666,7 @@ def run_seed() -> None:
 
         except Exception as e:
             session.rollback()
-            print(f"\n❌ Seed failed: {e}")
+            print(f"\nSeed failed: {e}")
             raise
 
 

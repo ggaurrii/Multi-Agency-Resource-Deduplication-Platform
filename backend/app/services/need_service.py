@@ -56,6 +56,35 @@ async def create_need(db: AsyncSession, data: NeedCreate, user: User) -> Need:
     db.add(need)
     await db.commit()
     await db.refresh(need)
+
+    # Operational events: Notification & Audit Logging
+    from app.services.audit_service import log_action
+    from app.services.notification_service import create_notification
+
+    await log_action(
+        db,
+        user_id=user.id,
+        action="CREATE",
+        entity="need",
+        entity_id=need.id,
+        after_state={
+            "resource_type": need.resource_type,
+            "quantity_needed": float(need.quantity_needed),
+            "priority": need.priority,
+            "status": need.status,
+        },
+    )
+
+    if priority == "CRITICAL":
+        await create_notification(
+            db,
+            notification_type="CRITICAL_NEED",
+            message=f"CRITICAL REQUIREMENT: {need.quantity_needed} {need.resource_type} needed immediately",
+            severity="CRITICAL",
+            ref_id=need.id,
+            ref_type="need",
+        )
+
     return need
 
 

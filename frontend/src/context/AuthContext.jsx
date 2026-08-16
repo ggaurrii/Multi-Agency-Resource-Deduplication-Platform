@@ -1,34 +1,70 @@
-import React, { createContext, useContext, useState } from 'react';
-import { DEV_MODE } from '../services/api';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import sahayogApi, { DEV_MODE } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState({
-    id: 'u1000000-0000-0000-0000-000000000002',
-    name: 'Chief Control Officer',
-    email: 'operator@sahayog.gov.in',
-    role: 'STATE_OPERATOR',
-    agency_id: null,
-    agency_name: 'State Disaster Operations Center (SDOC)',
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('sahayog_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   });
 
   const [devMode] = useState(DEV_MODE);
+  const [loading, setLoading] = useState(true);
 
-  const login = (userData, token) => {
+  // Validate active JWT session on startup
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem('sahayog_access_token');
+      if (token && token !== 'mock-dev-jwt-token') {
+        const me = await sahayogApi.getMe();
+        if (me && !me.error) {
+          setUser(me);
+          localStorage.setItem('sahayog_user', JSON.stringify(me));
+        } else {
+          // Token invalid or expired
+          localStorage.removeItem('sahayog_access_token');
+          localStorage.removeItem('sahayog_refresh_token');
+          localStorage.removeItem('sahayog_user');
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+    initAuth();
+  }, []);
+
+  const login = (userData, accessToken, refreshToken) => {
     setUser(userData);
-    localStorage.setItem('sahayog_access_token', token);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('sahayog_access_token');
-    if (!devMode) {
-      setUser(null);
+    localStorage.setItem('sahayog_user', JSON.stringify(userData));
+    if (accessToken) {
+      localStorage.setItem('sahayog_access_token', accessToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem('sahayog_refresh_token', refreshToken);
     }
   };
 
+  const logout = async () => {
+    const refreshToken = localStorage.getItem('sahayog_refresh_token');
+    if (refreshToken) {
+      await sahayogApi.logout(refreshToken);
+    }
+    localStorage.removeItem('sahayog_access_token');
+    localStorage.removeItem('sahayog_refresh_token');
+    localStorage.removeItem('sahayog_user');
+    setUser(null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, devMode, login, logout }}>
+    <AuthContext.Provider value={{ user, devMode, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

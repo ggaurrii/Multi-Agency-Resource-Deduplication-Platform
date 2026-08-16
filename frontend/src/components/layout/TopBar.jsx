@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Radio, AlertTriangle, Bell, Clock, Building2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Radio, Bell, Clock, Building2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function TopBar({ title, unreadAlertsCount = 0 }) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [timeStr, setTimeStr] = useState('');
 
@@ -25,42 +27,47 @@ export default function TopBar({ title, unreadAlertsCount = 0 }) {
   }, []);
 
   return (
-    <header className="h-14 bg-slate-900 border-b border-slate-800 text-white px-6 flex items-center justify-between shrink-0 shadow-md">
+    <header className="h-13 bg-white border-b border-[#D9E3EC] text-[#243447] px-5 flex items-center justify-between shrink-0 font-sans shadow-2xs">
       {/* Title section */}
-      <div className="flex items-center space-x-4">
-        <h2 className="text-lg font-bold tracking-wide uppercase font-mono text-slate-100 flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+      <div className="flex items-center space-x-3">
+        <h2 className="text-sm font-bold tracking-wide uppercase font-mono text-[#243447] flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#35698F]"></span>
           {title}
         </h2>
         {/* Operational Status Pill */}
-        <div className="hidden md:flex items-center space-x-2 px-3 py-1 bg-rose-950/80 border border-rose-800/80 rounded-full text-xs text-rose-200 font-mono tracking-tight shadow-inner">
-          <Radio className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
-          <span>STATUS: HIGH ALERT — HADOTI REGION FLOOD RELIEF</span>
+        <div className="hidden md:flex items-center space-x-1.5 px-2.5 py-0.5 bg-[#FFEBEE] border border-[#FFCDD2] rounded text-[11px] text-[#C62828] font-mono font-bold tracking-tight">
+          <Radio className="w-3 h-3 text-[#C62828] animate-pulse" />
+          <span>HADOTI FLOOD DISASTER RESPONSE — HIGH ALERT</span>
         </div>
       </div>
 
       {/* Right control elements */}
-      <div className="flex items-center space-x-6 text-xs text-slate-300 font-mono">
+      <div className="flex items-center space-x-4 text-xs text-[#64748B] font-mono">
         {/* Real-time Clock */}
-        <div className="hidden sm:flex items-center space-x-1.5 bg-slate-950 px-2.5 py-1 rounded border border-slate-800 text-slate-300">
-          <Clock className="w-3.5 h-3.5 text-blue-400" />
+        <div className="hidden sm:flex items-center space-x-1.5 bg-[#F4F8FC] px-2.5 py-1 rounded border border-[#D9E3EC] text-[#243447] text-[11px]">
+          <Clock className="w-3.5 h-3.5 text-[#35698F]" />
           <span>{timeStr || 'LIVE UTC/IST'}</span>
         </div>
 
         {/* Notifications Icon Pill */}
-        <div className="relative cursor-pointer p-1.5 hover:bg-slate-800 rounded transition-colors" title="Alerts Center">
-          <Bell className="w-4 h-4 text-slate-300" />
+        <div
+          onClick={() => navigate('/notifications')}
+          className="relative cursor-pointer px-2.5 py-1 bg-[#FFF8E1] border border-[#FFE082] rounded hover:bg-[#FFECB3] transition-colors flex items-center gap-1.5 text-[11px] text-[#D97706] font-bold"
+          title="Open Operational Alerts Console"
+        >
+          <Bell className="w-3.5 h-3.5 text-[#D97706]" />
+          <span className="hidden sm:inline">ALERTS</span>
           {unreadAlertsCount > 0 && (
-            <span className="absolute -top-1 -right-1 px-1.5 py-0.2 bg-rose-600 text-white text-[10px] font-bold rounded-full border border-slate-900">
+            <span className="px-1.5 py-0.2 bg-[#C62828] text-white text-[10px] font-bold rounded">
               {unreadAlertsCount}
             </span>
           )}
         </div>
 
         {/* Agency Badge */}
-        <div className="hidden lg:flex items-center space-x-1.5 bg-slate-800/80 px-2.5 py-1 rounded text-slate-200 border border-slate-700">
-          <Building2 className="w-3.5 h-3.5 text-amber-400" />
-          <span>{user?.agency_name || 'SDOC Command'}</span>
+        <div className="hidden lg:flex items-center space-x-1.5 bg-[#DCECF8] px-2.5 py-1 rounded text-[#1E425E] border border-[#8DB9D9] text-[11px] font-bold">
+          <Building2 className="w-3.5 h-3.5 text-[#35698F]" />
+          <span>{user?.agency_name || 'Command Center'}</span>
         </div>
       </div>
     </header>
