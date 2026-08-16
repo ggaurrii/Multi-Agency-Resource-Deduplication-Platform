@@ -37,6 +37,8 @@ async def lifespan(app: FastAPI):
 
 
 # ── Application ──────────────────────────────────────────────
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
@@ -47,9 +49,21 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # ── Register API routers ────────────────────────────────────
 from app.api.v1.allocations import router as allocations_router
+from app.api.v1.audit_logs import router as audit_logs_router
 from app.api.v1.auth import router as auth_router  # noqa: E402
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.needs import router as needs_router
@@ -62,6 +76,7 @@ app.include_router(resources_router, prefix="/api/v1")
 app.include_router(allocations_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
+app.include_router(audit_logs_router, prefix="/api/v1")
 
 
 # ── Health endpoints ─────────────────────────────────────────

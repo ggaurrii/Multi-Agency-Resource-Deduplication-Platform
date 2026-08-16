@@ -111,6 +111,30 @@ async def authorize_allocation(db: AsyncSession, allocation_id: UUID, user: User
 
     await db.commit()
     await db.refresh(allocation)
+
+    # Operational events: Notification & Audit Logging
+    from app.services.audit_service import log_action
+    from app.services.notification_service import create_notification
+
+    await create_notification(
+        db,
+        notification_type="ALLOCATION_ACCEPTED",
+        message=f"Allocation dispatch alloc-{str(allocation.id)[:8]} authorized and dispatched",
+        severity="LOW",
+        ref_id=allocation.id,
+        ref_type="allocation",
+    )
+
+    await log_action(
+        db,
+        user_id=user.id,
+        action="AUTHORIZE",
+        entity="allocation",
+        entity_id=allocation.id,
+        before_state={"status": "PROPOSED"},
+        after_state={"status": "ACCEPTED", "authorized_by": str(user.id)},
+    )
+
     return allocation
 
 
@@ -153,4 +177,28 @@ async def reject_allocation(db: AsyncSession, allocation_id: UUID, user: User) -
 
     await db.commit()
     await db.refresh(allocation)
+
+    # Operational events: Notification & Audit Logging
+    from app.services.audit_service import log_action
+    from app.services.notification_service import create_notification
+
+    await create_notification(
+        db,
+        notification_type="ALLOCATION_REJECTED",
+        message=f"Allocation proposal alloc-{str(allocation.id)[:8]} rejected; stock released to available pool",
+        severity="HIGH",
+        ref_id=allocation.id,
+        ref_type="allocation",
+    )
+
+    await log_action(
+        db,
+        user_id=user.id,
+        action="REJECT",
+        entity="allocation",
+        entity_id=allocation.id,
+        before_state={"status": "PROPOSED"},
+        after_state={"status": "REJECTED", "authorized_by": str(user.id)},
+    )
+
     return allocation

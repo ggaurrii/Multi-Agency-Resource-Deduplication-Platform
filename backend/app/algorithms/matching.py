@@ -125,4 +125,31 @@ class GreedyMatchingEngine:
 
         await db.commit()
         await db.refresh(allocation)
+
+        # Operational events: Notification & Audit Logging
+        from app.services.audit_service import log_action
+        from app.services.notification_service import create_notification
+
+        await create_notification(
+            db,
+            notification_type="ALLOCATION_PROPOSED",
+            message=f"Matching engine generated proposal alloc-{str(allocation.id)[:8]} matching requirement for need #{str(need.id)[:8]}",
+            severity="HIGH",
+            ref_id=allocation.id,
+            ref_type="allocation",
+        )
+
+        await log_action(
+            db,
+            user_id=None,
+            action="CREATE",
+            entity="allocation",
+            entity_id=allocation.id,
+            after_state={
+                "need_id": str(need.id),
+                "status": allocation.status,
+                "items_count": len(allocation_items),
+            },
+        )
+
         return allocation

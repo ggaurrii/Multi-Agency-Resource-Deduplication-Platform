@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import sahayogApi from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { canAuthorizeAllocation, canRejectAllocation } from '../utils/permissions';
 import {
   GitPullRequest,
   CheckCircle2,
   XCircle,
-  Clock,
   Truck,
   Building2,
-  MapPin,
   Eye,
   Zap,
   ShieldAlert,
@@ -17,13 +17,14 @@ import {
   RotateCcw,
   AlertTriangle,
   X,
-  Check,
-  Info,
-  ArrowRight
+  Check
 } from 'lucide-react';
 
 export default function Allocations() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canAuthorize = canAuthorizeAllocation(user);
+  const canReject = canRejectAllocation(user);
   const [allocations, setAllocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDemoFallback, setIsDemoFallback] = useState(false);
@@ -69,7 +70,6 @@ export default function Allocations() {
     setResourceTypeFilter('');
   };
 
-  // High-fidelity Hadoti Sector Allocation Dispatch Data for DEV_MODE
   const mockAllocations = [
     {
       id: 'alloc-9901-kota-water',
@@ -186,13 +186,12 @@ export default function Allocations() {
     return matchesSearch && matchesStatus && matchesDistrict && matchesType;
   });
 
-  // KPI Calculations
   const allItems = allocations.length > 0 ? allocations : mockAllocations;
   const proposedCount = allItems.filter((i) => i.status === 'PROPOSED').length;
   const acceptedCount = allItems.filter((i) => i.status === 'ACCEPTED').length;
   const modifiedCount = allItems.filter((i) => i.status === 'MODIFIED').length;
   const rejectedCount = allItems.filter((i) => i.status === 'REJECTED').length;
-  const inTransitCount = acceptedCount; // Backend transitions ACCEPTED resources to IN_TRANSIT
+  const inTransitCount = acceptedCount;
 
   const handleAuthorize = async (allocId) => {
     setActionLoading(true);
@@ -200,8 +199,13 @@ export default function Allocations() {
     try {
       await sahayogApi.authorizeAllocation(allocId);
       setFeedbackMessage(`Allocation #${allocId.slice(0, 8)} authorized successfully. Resources transitioned to IN_TRANSIT.`);
+      fetchAllocations();
     } catch (err) {
-      setFeedbackMessage(`DEV MODE: Allocation #${allocId.slice(0, 8)} authorization action recorded (Backend 403 authorization required for live DB update).`);
+      if (err.response?.status === 403) {
+        setFeedbackMessage('You are not authorized to perform this action.');
+      } else {
+        setFeedbackMessage(`Error: ${err.response?.data?.detail?.error?.message || err.message || 'Authorization failed'}`);
+      }
     } finally {
       setActionLoading(false);
       setConfirmAction(null);
@@ -215,8 +219,13 @@ export default function Allocations() {
     try {
       await sahayogApi.rejectAllocation(allocId);
       setFeedbackMessage(`Allocation #${allocId.slice(0, 8)} rejected. Reserved resources released back to AVAILABLE stock.`);
+      fetchAllocations();
     } catch (err) {
-      setFeedbackMessage(`DEV MODE: Allocation #${allocId.slice(0, 8)} rejection recorded (Reserved stock released in prototype model).`);
+      if (err.response?.status === 403) {
+        setFeedbackMessage('You are not authorized to perform this action.');
+      } else {
+        setFeedbackMessage(`Error: ${err.response?.data?.detail?.error?.message || err.message || 'Rejection failed'}`);
+      }
     } finally {
       setActionLoading(false);
       setConfirmAction(null);
@@ -227,137 +236,133 @@ export default function Allocations() {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'PROPOSED':
-        return 'bg-amber-100 text-amber-900 border border-amber-300 font-bold';
+        return 'bg-[#FFF8E1] text-[#D97706] border border-[#FFE082] font-bold';
       case 'ACCEPTED':
-        return 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold';
+        return 'bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] font-bold';
       case 'MODIFIED':
-        return 'bg-blue-100 text-blue-900 border border-blue-300 font-bold';
+        return 'bg-[#DCECF8] text-[#1E425E] border border-[#8DB9D9] font-bold';
       case 'REJECTED':
-        return 'bg-rose-100 text-rose-900 border border-rose-300 font-bold';
+        return 'bg-[#FFEBEE] text-[#C62828] border border-[#FFCDD2] font-bold';
       default:
-        return 'bg-slate-200 text-slate-800';
+        return 'bg-[#F4F8FC] text-[#64748B]';
     }
   };
 
   return (
     <MainLayout title="ALLOCATION CONTROL CENTER">
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-md p-5 text-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 font-mono">
+      <div className="bg-white border border-[#D9E3EC] rounded p-4 text-[#243447] shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 font-sans">
         <div>
           <div className="flex items-center space-x-2">
-            <GitPullRequest className="w-5 h-5 text-amber-400" />
-            <h1 className="text-lg font-bold uppercase tracking-wide">
-              ALLOCATION CONTROL CENTER
+            <GitPullRequest className="w-5 h-5 text-[#35698F]" />
+            <h1 className="text-base font-bold font-mono uppercase tracking-wide">
+              Allocation Control Center
             </h1>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-[#64748B] mt-0.5 font-medium">
             Review, authorize and monitor multi-agency resource allocations (PROPOSED → ACCEPTED / IN_TRANSIT)
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-700 text-xs font-bold rounded flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            DISPATCH WORKFLOW ● ONLINE
+          <span className="px-2.5 py-1 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[11px] font-mono font-bold rounded flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#2E7D32]"></span>
+            DISPATCH WORKFLOW ACTIVE
           </span>
         </div>
       </div>
 
-      {/* DEV MODE Authorization Notification Banner */}
       {isDemoFallback && (
-        <div className="p-3 bg-amber-950/80 border border-amber-800/80 text-amber-200 rounded-md text-xs font-mono flex items-center justify-between shadow-sm">
+        <div className="p-3 bg-[#FFF8E1] border border-[#FFE082] text-[#854D0E] rounded text-xs font-mono flex items-center justify-between shadow-2xs">
           <div className="flex items-center space-x-2">
-            <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+            <ShieldAlert className="w-4 h-4 text-[#D97706] shrink-0" />
             <span>
-              <strong>DEVELOPMENT AUTHORIZATION REQUIRED</strong> — Endpoints <code className="bg-amber-900 px-1 py-0.5 rounded text-amber-200">POST /api/v1/allocations/{'{id}'}/authorize</code> and <code className="bg-amber-900 px-1 py-0.5 rounded text-amber-200">reject</code> require a STATE_OPERATOR JWT session. Displaying prototype allocations.
+              <strong>DEV MODE ACTIVE</strong> — Displaying prototype allocations.
             </span>
           </div>
-          <span className="px-2 py-0.5 bg-amber-900 text-amber-300 rounded font-bold text-[10px] uppercase">
+          <span className="px-2 py-0.5 bg-[#FEF3C7] text-[#92400E] rounded font-bold text-[10px] uppercase border border-[#FDE68A]">
             Prototype View
           </span>
         </div>
       )}
 
-      {/* ACTION FEEDBACK ALERT */}
       {feedbackMessage && (
-        <div className="p-3 bg-blue-950/80 border border-blue-800 text-blue-200 rounded-md text-xs font-mono flex items-center justify-between shadow-sm">
+        <div className="p-3 bg-[#DCECF8] border border-[#8DB9D9] text-[#1E425E] rounded text-xs font-mono flex items-center justify-between shadow-2xs">
           <div className="flex items-center space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-[#2E7D32] shrink-0" />
             <span>{feedbackMessage}</span>
           </div>
-          <button onClick={() => setFeedbackMessage(null)} className="text-slate-400 hover:text-white">
+          <button onClick={() => setFeedbackMessage(null)} className="text-[#64748B] hover:text-[#243447]">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* KPI CARDS SECTION */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 font-mono text-xs">
-        <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between text-slate-500 font-semibold uppercase">
+      {/* KPI CARDS */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 font-mono text-xs">
+        <div className="bg-white border border-[#D9E3EC] border-t-3 border-t-[#D97706] rounded p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[#64748B] font-bold uppercase text-[11px]">
             <span>Proposed</span>
-            <GitPullRequest className="w-4 h-4 text-amber-500" />
+            <GitPullRequest className="w-4 h-4 text-[#D97706]" />
           </div>
-          <div className="mt-2 text-2xl font-black text-amber-600">{proposedCount}</div>
-          <p className="text-[11px] text-slate-500 mt-1">Awaiting Operator Review</p>
+          <div className="mt-1.5 text-2xl font-bold text-[#D97706]">{proposedCount}</div>
+          <p className="text-[10px] text-[#64748B] mt-0.5">Awaiting Operator Review</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm border-l-4 border-l-emerald-600">
-          <div className="flex items-center justify-between text-slate-500 font-semibold uppercase">
+        <div className="bg-white border border-[#D9E3EC] border-t-3 border-t-[#2E7D32] rounded p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[#64748B] font-bold uppercase text-[11px]">
             <span>Accepted</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <CheckCircle2 className="w-4 h-4 text-[#2E7D32]" />
           </div>
-          <div className="mt-2 text-2xl font-black text-emerald-700">{acceptedCount}</div>
-          <p className="text-[11px] text-slate-500 mt-1">Movement Authorized</p>
+          <div className="mt-1.5 text-2xl font-bold text-[#2E7D32]">{acceptedCount}</div>
+          <p className="text-[10px] text-[#64748B] mt-0.5">Movement Authorized</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm border-l-4 border-l-blue-600">
-          <div className="flex items-center justify-between text-slate-500 font-semibold uppercase">
+        <div className="bg-white border border-[#D9E3EC] border-t-3 border-t-[#35698F] rounded p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[#64748B] font-bold uppercase text-[11px]">
             <span>In Transit</span>
-            <Truck className="w-4 h-4 text-blue-600" />
+            <Truck className="w-4 h-4 text-[#35698F]" />
           </div>
-          <div className="mt-2 text-2xl font-black text-blue-700">{inTransitCount}</div>
-          <p className="text-[11px] text-slate-500 mt-1">En Route to Sector</p>
+          <div className="mt-1.5 text-2xl font-bold text-[#1E425E]">{inTransitCount}</div>
+          <p className="text-[10px] text-[#64748B] mt-0.5">En Route to Sector</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm border-l-4 border-l-purple-600">
-          <div className="flex items-center justify-between text-slate-500 font-semibold uppercase">
+        <div className="bg-white border border-[#D9E3EC] border-t-3 border-t-[#6B21A8] rounded p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[#64748B] font-bold uppercase text-[11px]">
             <span>Modified</span>
-            <GitPullRequest className="w-4 h-4 text-purple-600" />
+            <GitPullRequest className="w-4 h-4 text-[#6B21A8]" />
           </div>
-          <div className="mt-2 text-2xl font-black text-purple-700">{modifiedCount}</div>
-          <p className="text-[11px] text-slate-500 mt-1">Adjusted Proposal</p>
+          <div className="mt-1.5 text-2xl font-bold text-[#6B21A8]">{modifiedCount}</div>
+          <p className="text-[10px] text-[#64748B] mt-0.5">Adjusted Proposal</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm border-l-4 border-l-rose-600">
-          <div className="flex items-center justify-between text-slate-500 font-semibold uppercase">
+        <div className="bg-white border border-[#D9E3EC] border-t-3 border-t-[#C62828] rounded p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[#64748B] font-bold uppercase text-[11px]">
             <span>Rejected</span>
-            <XCircle className="w-4 h-4 text-rose-600" />
+            <XCircle className="w-4 h-4 text-[#C62828]" />
           </div>
-          <div className="mt-2 text-2xl font-black text-rose-600">{rejectedCount}</div>
-          <p className="text-[11px] text-slate-500 mt-1">Released to Stock</p>
+          <div className="mt-1.5 text-2xl font-bold text-[#C62828]">{rejectedCount}</div>
+          <p className="text-[10px] text-[#64748B] mt-0.5">Released to Stock</p>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm space-y-3 font-mono text-xs">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Search */}
+      <div className="bg-white border border-[#D9E3EC] rounded p-3 shadow-2xs space-y-3 font-mono text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#64748B]" />
             <input
               type="text"
               placeholder="Search Allocation ID / Need / District..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-3 py-1.5 text-xs font-mono w-full border border-slate-300 rounded focus:outline-none focus:border-blue-600 bg-slate-50"
+              className="pl-8 pr-3 py-1.5 text-xs font-mono w-full border border-[#D9E3EC] rounded focus:outline-none focus:border-[#35698F] bg-[#F4F8FC]"
             />
           </div>
 
-          {/* Status Filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="py-1.5 px-3 border border-slate-300 rounded text-xs font-mono bg-white"
+            className="py-1.5 px-3 border border-[#D9E3EC] rounded text-xs font-mono bg-white"
           >
             <option value="">All Statuses</option>
             <option value="PROPOSED">PROPOSED (Pending Review)</option>
@@ -366,11 +371,10 @@ export default function Allocations() {
             <option value="REJECTED">REJECTED (Stock Released)</option>
           </select>
 
-          {/* District Filter */}
           <select
             value={districtFilter}
             onChange={(e) => setDistrictFilter(e.target.value)}
-            className="py-1.5 px-3 border border-slate-300 rounded text-xs font-mono bg-white"
+            className="py-1.5 px-3 border border-[#D9E3EC] rounded text-xs font-mono bg-white"
           >
             <option value="">All Districts</option>
             <option value="Kota">Kota</option>
@@ -379,11 +383,10 @@ export default function Allocations() {
             <option value="Jhalawar">Jhalawar</option>
           </select>
 
-          {/* Resource Type Filter */}
           <select
             value={resourceTypeFilter}
             onChange={(e) => setResourceTypeFilter(e.target.value)}
-            className="py-1.5 px-3 border border-slate-300 rounded text-xs font-mono bg-white"
+            className="py-1.5 px-3 border border-[#D9E3EC] rounded text-xs font-mono bg-white"
           >
             <option value="">All Resource Types</option>
             <option value="BOAT">Rescue Boats</option>
@@ -394,87 +397,87 @@ export default function Allocations() {
           </select>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-2 border-t border-[#D9E3EC]">
           <button
             onClick={clearFilters}
-            className="text-xs text-slate-600 hover:text-slate-900 font-semibold flex items-center gap-1"
+            className="text-xs text-[#64748B] hover:text-[#243447] font-semibold flex items-center gap-1"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>CLEAR FILTERS</span>
           </button>
-          <span className="text-slate-500">
-            Showing <strong className="text-slate-900">{itemsToDisplay.length}</strong> allocations
+          <span className="text-[#64748B]">
+            Showing <strong className="text-[#243447]">{itemsToDisplay.length}</strong> allocations
           </span>
         </div>
       </div>
 
-      {/* ALLOCATIONS OPERATIONAL TABLE */}
-      <div className="bg-white border border-slate-200 rounded-md shadow-sm overflow-hidden font-mono text-xs">
+      {/* ALLOCATIONS TABLE */}
+      <div className="bg-white border border-[#D9E3EC] rounded shadow-2xs overflow-hidden font-mono text-xs">
         {loading ? (
-          <div className="p-8 text-center text-slate-500 font-mono text-xs">Loading allocations...</div>
+          <div className="p-8 text-center text-[#64748B]">Loading allocations...</div>
         ) : itemsToDisplay.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 font-mono text-xs">
+          <div className="p-8 text-center text-[#64748B]">
             No allocations match the selected filters.
           </div>
         ) : (
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 uppercase text-[10px]">
-                <th className="p-3">Allocation ID</th>
-                <th className="p-3">Need Requisition</th>
-                <th className="p-3">District</th>
-                <th className="p-3">Resource Type</th>
-                <th className="p-3">Allocated Quantity</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Created At</th>
-                <th className="p-3">Actions</th>
+              <tr className="bg-[#F4F8FC] border-b border-[#D9E3EC] text-[#64748B] uppercase text-[10px]">
+                <th className="p-2.5">Allocation ID</th>
+                <th className="p-2.5">Need Requisition</th>
+                <th className="p-2.5">District</th>
+                <th className="p-2.5">Resource Type</th>
+                <th className="p-2.5">Allocated Quantity</th>
+                <th className="p-2.5">Status</th>
+                <th className="p-2.5">Created At</th>
+                <th className="p-2.5">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#D9E3EC]">
               {itemsToDisplay.map((alloc) => {
                 const totalQty = alloc.total_quantity_allocated ||
                   (alloc.items ? alloc.items.reduce((acc, i) => acc + (i.quantity_allocated || 0), 0) : 0);
                 const unit = alloc.unit || (alloc.items && alloc.items[0]?.unit) || 'units';
 
                 return (
-                  <tr key={alloc.id} className="hover:bg-slate-50">
-                    <td className="p-3 font-bold text-slate-900">#{alloc.id.slice(0, 8)}</td>
-                    <td className="p-3">
+                  <tr key={alloc.id} className="hover:bg-[#F4F8FC]">
+                    <td className="p-2.5 font-bold text-[#243447]">#{alloc.id.slice(0, 8)}</td>
+                    <td className="p-2.5">
                       <button
                         onClick={() => navigate(`/needs`)}
-                        className="text-blue-700 hover:underline font-semibold"
+                        className="text-[#35698F] hover:underline font-semibold"
                       >
                         #{alloc.need_id ? alloc.need_id.slice(0, 8) : 'n-1042'}
                       </button>
                     </td>
-                    <td className="p-3 font-bold text-slate-800">{alloc.district_name || 'Kota'}</td>
-                    <td className="p-3 font-semibold text-blue-900">{alloc.resource_type || 'DRINKING_WATER'}</td>
-                    <td className="p-3 font-black text-slate-900 text-sm">
+                    <td className="p-2.5 font-bold text-[#243447]">{alloc.district_name || 'Kota'}</td>
+                    <td className="p-2.5 font-semibold text-[#1E425E]">{alloc.resource_type || 'DRINKING_WATER'}</td>
+                    <td className="p-2.5 font-bold text-[#243447] text-sm">
                       {totalQty.toLocaleString()} {unit}
                     </td>
-                    <td className="p-3">
+                    <td className="p-2.5">
                       <span className={`px-2 py-0.5 text-[10px] rounded ${getStatusBadge(alloc.status)}`}>
                         {alloc.status}
                       </span>
                     </td>
-                    <td className="p-3 text-slate-600">
+                    <td className="p-2.5 text-[#64748B]">
                       {new Date(alloc.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
-                    <td className="p-3 flex items-center space-x-2">
-                      {alloc.status === 'PROPOSED' ? (
+                    <td className="p-2.5 flex items-center space-x-1.5">
+                      {alloc.status === 'PROPOSED' && canAuthorize ? (
                         <button
                           onClick={() => setReviewAllocation(alloc)}
-                          className="px-2.5 py-1 bg-blue-800 hover:bg-blue-900 text-white rounded text-[10px] font-bold flex items-center gap-1 shadow-xs"
+                          className="px-2.5 py-1 bg-[#35698F] hover:bg-[#255273] text-white rounded text-[10px] font-bold flex items-center gap-1 shadow-2xs"
                         >
-                          <Zap className="w-3 h-3 text-amber-300" />
+                          <Zap className="w-3 h-3 text-[#FFE082]" />
                           REVIEW PROPOSAL
                         </button>
                       ) : (
                         <button
                           onClick={() => setSelectedAllocation(alloc)}
-                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded text-[10px] font-bold flex items-center gap-1"
+                          className="px-2.5 py-1 bg-[#64748B] hover:bg-[#475569] text-white rounded text-[10px] font-bold flex items-center gap-1"
                         >
-                          <Eye className="w-3 h-3 text-amber-400" />
+                          <Eye className="w-3 h-3 text-[#FFE082]" />
                           Inspect
                         </button>
                       )}
@@ -489,60 +492,58 @@ export default function Allocations() {
 
       {/* ALLOCATION REVIEW MODAL */}
       {reviewAllocation && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-md shadow-2xl w-full max-w-2xl font-mono text-xs overflow-hidden">
-            <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#D9E3EC] rounded shadow-2xl w-full max-w-2xl font-mono text-xs overflow-hidden">
+            <div className="p-4 bg-[#F4F8FC] text-[#243447] flex items-center justify-between border-b border-[#D9E3EC]">
               <div className="flex items-center space-x-2">
-                <GitPullRequest className="w-5 h-5 text-amber-400" />
+                <GitPullRequest className="w-5 h-5 text-[#35698F]" />
                 <h3 className="text-sm font-bold uppercase tracking-wide">
                   PROPOSED ALLOCATION REVIEW — #{reviewAllocation.id.slice(0, 8)}
                 </h3>
               </div>
-              <button onClick={() => setReviewAllocation(null)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setReviewAllocation(null)} className="text-[#64748B] hover:text-[#243447]">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-              {/* Need Requisition Overview */}
-              <div className="bg-slate-50 border border-slate-200 rounded p-4 space-y-2">
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Associated Requisition</span>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-slate-800">
-                  <div>Need ID: <strong className="text-blue-900">#{reviewAllocation.need_id ? reviewAllocation.need_id.slice(0, 8) : 'n-1042'}</strong></div>
-                  <div>District: <strong className="text-slate-900">{reviewAllocation.district_name || 'Kota'}</strong></div>
-                  <div>Resource: <strong className="text-blue-900">{reviewAllocation.resource_type || 'DRINKING_WATER'}</strong></div>
+              <div className="bg-[#F4F8FC] border border-[#D9E3EC] rounded p-3 space-y-2">
+                <span className="text-[10px] text-[#64748B] uppercase font-bold">Associated Requisition</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-[#243447]">
+                  <div>Need ID: <strong className="text-[#1E425E]">#{reviewAllocation.need_id ? reviewAllocation.need_id.slice(0, 8) : 'n-1042'}</strong></div>
+                  <div>District: <strong>{reviewAllocation.district_name || 'Kota'}</strong></div>
+                  <div>Resource: <strong className="text-[#1E425E]">{reviewAllocation.resource_type || 'DRINKING_WATER'}</strong></div>
                 </div>
               </div>
 
-              {/* Proposed Multi-Agency Resource Split Table */}
               <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-800 uppercase border-b border-slate-200 pb-1 flex items-center justify-between">
+                <h4 className="text-xs font-bold text-[#243447] uppercase border-b border-[#D9E3EC] pb-1 flex items-center justify-between">
                   <span>PROPOSED MULTI-AGENCY RESOURCE SPLIT</span>
-                  <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded">
+                  <span className="text-[10px] text-[#D97706] font-bold bg-[#FFF8E1] px-2 py-0.5 rounded border border-[#FFE082]">
                     RESERVED IN STOCK
                   </span>
                 </h4>
 
-                <div className="border border-slate-200 rounded overflow-hidden">
+                <div className="border border-[#D9E3EC] rounded overflow-hidden">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="bg-slate-100 text-slate-600 uppercase text-[10px]">
+                      <tr className="bg-[#F4F8FC] text-[#64748B] uppercase text-[10px]">
                         <th className="p-2.5">Agency</th>
                         <th className="p-2.5">Quantity Allocated</th>
                         <th className="p-2.5">Proximity Distance</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-[#D9E3EC]">
                       {reviewAllocation.items.map((item, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50">
-                          <td className="p-2.5 font-bold text-slate-900 flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-blue-700" />
+                        <tr key={idx} className="hover:bg-[#F4F8FC]">
+                          <td className="p-2.5 font-bold text-[#243447] flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-[#35698F]" />
                             {item.agency_name}
                           </td>
-                          <td className="p-2.5 font-black text-blue-900">
+                          <td className="p-2.5 font-bold text-[#1E425E]">
                             {item.quantity_allocated.toLocaleString()} {item.unit || reviewAllocation.unit}
                           </td>
-                          <td className="p-2.5 text-slate-600 font-semibold">{item.distance_km} km</td>
+                          <td className="p-2.5 text-[#64748B] font-semibold">{item.distance_km} km</td>
                         </tr>
                       ))}
                     </tbody>
@@ -550,170 +551,76 @@ export default function Allocations() {
                 </div>
               </div>
 
-              {/* Modification Notice Warning */}
-              {modificationNotice && (
-                <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded text-[11px] space-y-1">
-                  <div className="font-bold flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    MODIFICATION NOT AVAILABLE IN BACKEND CONTRACT
-                  </div>
-                  <p className="text-slate-700">
-                    The backend API does not currently expose an online proposal modification endpoint. To adjust allocations, REJECT this proposal to release stock back to AVAILABLE pool, then re-run the Matching Engine with adjusted filters.
+              {confirmAction && (
+                <div className="p-3 bg-[#FFF8E1] border border-[#FFE082] text-[#854D0E] rounded text-xs space-y-2">
+                  <p className="font-bold">
+                    Confirm Action: {confirmAction === 'AUTHORIZE' ? 'ACCEPT & DISPATCH ALLOCATION' : 'REJECT & RELEASE STOCK'}
                   </p>
+                  <p className="text-[11px] text-[#64748B]">
+                    {confirmAction === 'AUTHORIZE'
+                      ? 'This will transition status to ACCEPTED and mark stock IN_TRANSIT.'
+                      : 'This will transition status to REJECTED and return reserved stock to AVAILABLE.'}
+                  </p>
+                  <div className="flex space-x-2 pt-1">
+                    <button
+                      onClick={() => confirmAction === 'AUTHORIZE' ? handleAuthorize(reviewAllocation.id) : handleReject(reviewAllocation.id)}
+                      disabled={actionLoading}
+                      className="px-3 py-1 bg-[#35698F] text-white font-bold rounded text-xs"
+                    >
+                      {actionLoading ? 'Processing...' : 'Confirm'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmAction(null)}
+                      className="px-3 py-1 bg-[#64748B] text-white rounded text-xs"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="flex space-x-2">
+              {!confirmAction && canAuthorize && (
+                <div className="pt-2 border-t border-[#D9E3EC] flex space-x-2 justify-end">
                   <button
                     onClick={() => setConfirmAction('AUTHORIZE')}
                     disabled={actionLoading}
-                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded font-bold flex items-center gap-1.5 shadow-sm"
+                    className="px-3.5 py-1.5 bg-[#2E7D32] hover:bg-[#1B5E20] text-white rounded font-bold flex items-center gap-1 text-xs"
                   >
-                    <Check className="w-4 h-4 text-emerald-200" />
+                    <Check className="w-3.5 h-3.5" />
                     ACCEPT ALLOCATION
                   </button>
                   <button
                     onClick={() => setConfirmAction('REJECT')}
                     disabled={actionLoading}
-                    className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded font-bold flex items-center gap-1.5 shadow-sm"
+                    className="px-3.5 py-1.5 bg-[#C62828] hover:bg-[#B71C1C] text-white rounded font-bold flex items-center gap-1 text-xs"
                   >
-                    <X className="w-4 h-4 text-rose-200" />
+                    <X className="w-3.5 h-3.5" />
                     REJECT ALLOCATION
                   </button>
                 </div>
-
-                <button
-                  onClick={() => setModificationNotice(!modificationNotice)}
-                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold border border-slate-300 text-[11px]"
-                >
-                  MODIFY ALLOCATION
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CONFIRMATION DIALOG (FOR AUTHORIZE / REJECT) */}
-      {confirmAction && reviewAllocation && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-md shadow-2xl max-w-md w-full p-5 font-mono text-xs space-y-4">
-            <div className="flex items-center space-x-2 font-bold text-slate-900 text-sm">
-              <AlertTriangle className={`w-5 h-5 ${confirmAction === 'AUTHORIZE' ? 'text-emerald-600' : 'text-rose-600'}`} />
-              <span>{confirmAction === 'AUTHORIZE' ? 'AUTHORIZE RESOURCE MOVEMENT?' : 'REJECT ALLOCATION & RELEASE STOCK?'}</span>
-            </div>
-
-            <p className="text-slate-600 text-[11px] leading-relaxed">
-              {confirmAction === 'AUTHORIZE'
-                ? `Accepting this allocation will transition resources from RESERVED to IN_TRANSIT and fulfill requisition #${reviewAllocation.need_id ? reviewAllocation.need_id.slice(0, 8) : 'n-1042'}.`
-                : `Rejecting this allocation will release all reserved stock back to the AVAILABLE resource pool.`}
-            </p>
-
-            <div className="flex justify-end space-x-3 pt-2">
-              <button
-                onClick={() => setConfirmAction(null)}
-                className="px-4 py-2 bg-slate-200 text-slate-800 rounded font-bold hover:bg-slate-300"
-              >
-                Cancel
-              </button>
-              {confirmAction === 'AUTHORIZE' ? (
-                <button
-                  onClick={() => handleAuthorize(reviewAllocation.id)}
-                  disabled={actionLoading}
-                  className="px-4 py-2 bg-emerald-700 text-white rounded font-bold hover:bg-emerald-800 shadow-sm"
-                >
-                  {actionLoading ? 'Authorizing...' : 'Confirm Acceptance'}
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleReject(reviewAllocation.id)}
-                  disabled={actionLoading}
-                  className="px-4 py-2 bg-rose-700 text-white rounded font-bold hover:bg-rose-800 shadow-sm"
-                >
-                  {actionLoading ? 'Rejecting...' : 'Confirm Rejection'}
-                </button>
               )}
             </div>
           </div>
         </div>
       )}
 
-      {/* ALLOCATION INSPECTION SLIDE-OVER */}
+      {/* READ-ONLY INSPECTION SLIDE-OVER */}
       {selectedAllocation && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex justify-end">
-          <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col font-mono text-xs border-l border-slate-200">
-            <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
-              <div className="flex items-center space-x-2">
-                <GitPullRequest className="w-5 h-5 text-amber-400" />
-                <h3 className="text-sm font-bold uppercase tracking-wide">Allocation Inspection</h3>
-              </div>
-              <button onClick={() => setSelectedAllocation(null)} className="p-1 text-slate-400 hover:text-white rounded">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex justify-end font-mono text-xs">
+          <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col border-l border-[#D9E3EC]">
+            <div className="p-4 bg-[#F4F8FC] text-[#243447] flex items-center justify-between border-b border-[#D9E3EC]">
+              <h3 className="text-sm font-bold uppercase">Allocation Inspection #{selectedAllocation.id.slice(0, 8)}</h3>
+              <button onClick={() => setSelectedAllocation(null)} className="text-[#64748B] hover:text-[#243447]">
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            <div className="p-5 flex-1 overflow-y-auto space-y-4">
-              <div className="bg-slate-50 border border-slate-200 rounded p-3 space-y-1">
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Allocation Identifier</span>
-                <p className="font-bold text-slate-900 text-sm">#{selectedAllocation.id}</p>
-                <span className={`inline-block px-2 py-0.5 text-[10px] rounded ${getStatusBadge(selectedAllocation.status)}`}>
-                  {selectedAllocation.status}
-                </span>
-              </div>
-
-              {/* Quick Navigation Links */}
-              <div className="flex space-x-2 font-bold text-[11px]">
-                <button
-                  onClick={() => navigate('/needs')}
-                  className="flex-1 p-2 bg-blue-50 text-blue-900 border border-blue-200 rounded hover:bg-blue-100 text-center"
-                >
-                  VIEW NEED →
-                </button>
-                <button
-                  onClick={() => navigate(`/matching?need=${selectedAllocation.need_id || 'n-1042-kota-water'}`)}
-                  className="flex-1 p-2 bg-amber-50 text-amber-900 border border-amber-200 rounded hover:bg-amber-100 text-center"
-                >
-                  VIEW MATCHING →
-                </button>
-              </div>
-
-              {/* Items Breakdown */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-700 uppercase border-b border-slate-200 pb-1">
-                  Contributing Agency Items
-                </h4>
-                <div className="space-y-2">
-                  {selectedAllocation.items.map((item, idx) => (
-                    <div key={idx} className="bg-slate-50 border border-slate-200 rounded p-3 text-xs space-y-1">
-                      <div className="flex justify-between font-bold text-slate-900">
-                        <span>{item.agency_name}</span>
-                        <span className="text-blue-900">{item.quantity_allocated.toLocaleString()} {item.unit || selectedAllocation.unit}</span>
-                      </div>
-                      <div className="text-[11px] text-slate-500">Proximity: {item.distance_km} km</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Timestamps */}
-              <div className="space-y-1 text-slate-600 text-[11px]">
-                <h4 className="text-xs font-bold text-slate-700 uppercase border-b border-slate-200 pb-1">
-                  Audit Metadata
-                </h4>
-                <div>Created: <strong>{new Date(selectedAllocation.created_at || Date.now()).toLocaleString()}</strong></div>
-                {selectedAllocation.authorized_at && (
-                  <div>Authorized: <strong>{new Date(selectedAllocation.authorized_at).toLocaleString()}</strong> by {selectedAllocation.authorized_by}</div>
-                )}
-              </div>
+            <div className="p-5 space-y-4 flex-1 overflow-y-auto">
+              <div>District: <strong>{selectedAllocation.district_name || 'Kota'}</strong></div>
+              <div>Resource: <strong className="text-[#1E425E]">{selectedAllocation.resource_type}</strong></div>
+              <div>Status: <span className={`px-2 py-0.5 text-[10px] rounded ${getStatusBadge(selectedAllocation.status)}`}>{selectedAllocation.status}</span></div>
             </div>
-
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
-              <button
-                onClick={() => setSelectedAllocation(null)}
-                className="px-4 py-2 bg-slate-800 text-white rounded font-bold hover:bg-slate-900"
-              >
+            <div className="p-4 bg-[#F4F8FC] border-t border-[#D9E3EC] flex justify-end">
+              <button onClick={() => setSelectedAllocation(null)} className="px-4 py-1.5 bg-[#64748B] text-white rounded font-bold">
                 Close
               </button>
             </div>

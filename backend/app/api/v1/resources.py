@@ -18,7 +18,7 @@ from app.schemas.resource import (
 from app.algorithms.deduplication import pool_resources
 from app.services import resource_service
 
-router = APIRouter(tags=["Resources"])
+router = APIRouter(prefix="/resources", tags=["Resources"])
 
 
 @router.get("/", response_model=ResourceListResponse)

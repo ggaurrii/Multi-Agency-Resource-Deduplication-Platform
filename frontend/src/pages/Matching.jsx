@@ -31,7 +31,6 @@ export default function Matching() {
   const [allocationCreated, setAllocationCreated] = useState(null);
   const [isDemoFallback, setIsDemoFallback] = useState(false);
 
-  // Pre-seeded needs fallback for DEV_MODE
   const mockNeeds = [
     {
       id: 'n-1042-kota-water',
@@ -68,7 +67,6 @@ export default function Matching() {
     },
   ];
 
-  // Realistic mock matching recommendations for DEV_MODE
   const mockMatchings = {
     'n-1042-kota-water': {
       need_id: 'n-1042-kota-water',
@@ -122,7 +120,7 @@ export default function Matching() {
       need_id: 'n-1044-baran-amb',
       status: 'PROPOSED',
       matched_quantity: 3,
-      unmatched_quantity: 1, // Shortage example
+      unmatched_quantity: 1,
       items: [
         {
           agency_name: 'Indian Army Medical Corps',
@@ -138,7 +136,7 @@ export default function Matching() {
 
   useEffect(() => {
     const fetchNeeds = async () => {
-      const data = await sahayogApi.getNeeds({ status: 'OPEN' });
+      const data = await sahayogApi.getNeeds();
       if (data?.is_demo_fallback || !data?.items || data.items.length === 0) {
         setIsDemoFallback(true);
         setNeedsList(mockNeeds);
@@ -184,7 +182,6 @@ export default function Matching() {
       if (res && res.items) {
         setMatchingResult(res);
       } else {
-        // Fallback demo matching structure
         setMatchingResult(mockMatchings[selectedNeed.id] || mockMatchings['n-1042-kota-water']);
       }
     } catch (err) {
@@ -215,82 +212,80 @@ export default function Matching() {
   return (
     <MainLayout title="RESOURCE MATCHING ENGINE">
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-md p-5 text-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 font-mono">
+      <div className="bg-white border border-[#D9E3EC] rounded p-4 text-[#243447] shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 font-sans">
         <div>
-          <div className="flex items-center space-x-3">
-            <Zap className="w-6 h-6 text-amber-400" />
-            <h1 className="text-xl font-extrabold uppercase tracking-wide">
-              RESOURCE MATCHING ENGINE
+          <div className="flex items-center space-x-2">
+            <Zap className="w-5 h-5 text-[#35698F]" />
+            <h1 className="text-base font-bold font-mono uppercase tracking-wide">
+              Greedy Resource Matching Engine
             </h1>
-            <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 rounded flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] rounded">
               OPERATIONAL
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Match critical requirements with available multi-agency resources using proximity, availability and quantity (GreedyMatchingEngine)
+          <p className="text-xs text-[#64748B] mt-0.5">
+            Match critical requirements with available multi-agency resources using proximity and quantity
           </p>
         </div>
       </div>
 
-      {/* DEV MODE Authorization Notification Banner */}
       {isDemoFallback && (
-        <div className="p-3 bg-amber-950/80 border border-amber-800/80 text-amber-200 rounded-md text-xs font-mono flex items-center justify-between shadow-sm">
+        <div className="p-3 bg-[#FFF8E1] border border-[#FFE082] text-[#854D0E] rounded text-xs font-mono flex items-center justify-between shadow-2xs">
           <div className="flex items-center space-x-2">
-            <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+            <ShieldAlert className="w-4 h-4 text-[#D97706] shrink-0" />
             <span>
-              <strong>DEVELOPMENT AUTHORIZATION REQUIRED</strong> — Endpoint <code className="bg-amber-900 px-1 py-0.5 rounded text-amber-200">POST /api/v1/allocations/match/{'{id}'}</code> requires a valid backend JWT session for live PostGIS execution. Displaying prototype matching algorithm execution.
+              <strong>DEV MODE ACTIVE</strong> — Displaying prototype matching algorithm execution.
             </span>
           </div>
-          <span className="px-2 py-0.5 bg-amber-900 text-amber-300 rounded font-bold text-[10px] uppercase">
+          <span className="px-2 py-0.5 bg-[#FEF3C7] text-[#92400E] rounded font-bold text-[10px] uppercase border border-[#FDE68A]">
             Prototype Mode
           </span>
         </div>
       )}
 
       {/* MATCHING WORKFLOW PIPELINE VISUAL */}
-      <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm font-mono text-xs">
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">
+      <div className="bg-white border border-[#D9E3EC] rounded p-3.5 shadow-2xs font-mono text-xs">
+        <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-widest block mb-2">
           MATCHING PIPELINE WORKFLOW (SDD §4.2)
         </span>
-        <div className="flex flex-wrap items-center justify-between gap-2 text-slate-700 font-semibold bg-slate-50 p-3 rounded border border-slate-200">
-          <div className="flex items-center gap-1.5 text-blue-900">
-            <FileQuestion className="w-4 h-4 text-blue-700" />
-            <span>1. NEED REQUISITION</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[#243447] font-semibold bg-[#F4F8FC] p-3 rounded border border-[#D9E3EC] text-[11px]">
+          <div className="flex items-center gap-1 text-[#1E425E]">
+            <FileQuestion className="w-3.5 h-3.5 text-[#35698F]" />
+            <span>1. REQUISITION</span>
           </div>
-          <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-          <div className="flex items-center gap-1.5 text-blue-900">
-            <Boxes className="w-4 h-4 text-blue-700" />
-            <span>2. AVAILABLE STOCK</span>
+          <ArrowRight className="w-3.5 h-3.5 text-[#64748B]" />
+          <div className="flex items-center gap-1 text-[#1E425E]">
+            <Boxes className="w-3.5 h-3.5 text-[#35698F]" />
+            <span>2. STOCK POOL</span>
           </div>
-          <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-          <div className="flex items-center gap-1.5 text-amber-700">
-            <Zap className="w-4 h-4 text-amber-600" />
-            <span>3. GREEDY MATCHING ENGINE</span>
+          <ArrowRight className="w-3.5 h-3.5 text-[#64748B]" />
+          <div className="flex items-center gap-1 text-[#D97706]">
+            <Zap className="w-3.5 h-3.5 text-[#D97706]" />
+            <span>3. GREEDY MATCH</span>
           </div>
-          <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-          <div className="flex items-center gap-1.5 text-purple-700">
-            <Truck className="w-4 h-4 text-purple-600" />
-            <span>4. PROPOSED ALLOCATION</span>
+          <ArrowRight className="w-3.5 h-3.5 text-[#64748B]" />
+          <div className="flex items-center gap-1 text-[#6B21A8]">
+            <Truck className="w-3.5 h-3.5 text-[#6B21A8]" />
+            <span>4. PROPOSE</span>
           </div>
-          <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-          <div className="flex items-center gap-1.5 text-emerald-700">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>5. OPERATOR AUTHORIZATION</span>
+          <ArrowRight className="w-3.5 h-3.5 text-[#64748B]" />
+          <div className="flex items-center gap-1 text-[#2E7D32]">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#2E7D32]" />
+            <span>5. AUTHORIZE</span>
           </div>
         </div>
       </div>
 
-      {/* 1. SELECT NEED SECTION */}
-      <div className="bg-white border border-slate-200 rounded-md p-5 shadow-sm font-mono text-xs space-y-4">
+      {/* SELECT NEED SECTION */}
+      <div className="bg-white border border-[#D9E3EC] rounded p-4 shadow-2xs font-mono text-xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <label className="font-bold text-slate-900 text-sm uppercase tracking-wide">
+          <label className="font-bold text-[#243447] text-xs uppercase tracking-wide">
             Select Requisition for Matching:
           </label>
           <select
             value={selectedNeedId}
             onChange={(e) => handleSelectNeed(e.target.value)}
-            className="py-2 px-3 border border-slate-300 rounded text-xs font-mono font-bold bg-slate-50 focus:outline-none focus:border-blue-600 max-w-md"
+            className="py-1.5 px-3 border border-[#D9E3EC] rounded text-xs font-mono font-bold bg-[#F4F8FC] focus:outline-none focus:border-[#35698F] max-w-md"
           >
             {needsList.map((n) => (
               <option key={n.id} value={n.id}>
@@ -300,53 +295,52 @@ export default function Matching() {
           </select>
         </div>
 
-        {/* SELECTED NEED CARD */}
         {selectedNeed ? (
-          <div className="border border-slate-200 rounded-md p-4 bg-slate-50 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-              <span className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-rose-600" /> #{selectedNeed.id} ({selectedNeed.district_name || 'Kota'})
+          <div className="border border-[#D9E3EC] rounded p-3 bg-[#F4F8FC] space-y-3">
+            <div className="flex items-center justify-between border-b border-[#D9E3EC] pb-2">
+              <span className="font-bold text-[#243447] text-xs flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[#C62828]" /> #{selectedNeed.id} ({selectedNeed.district_name || 'Kota'})
               </span>
-              <span className="px-2.5 py-0.5 bg-rose-600 text-white font-bold rounded text-[10px]">
+              <span className="px-2 py-0.5 bg-[#C62828] text-white font-bold rounded text-[10px]">
                 {selectedNeed.priority} PRIORITY
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-slate-700">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[#243447]">
               <div>
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">Resource Needed</span>
-                <strong className="text-blue-900 text-sm">{selectedNeed.resource_type}</strong>
+                <span className="text-[10px] text-[#64748B] uppercase font-bold block">Resource Needed</span>
+                <strong className="text-[#1E425E]">{selectedNeed.resource_type}</strong>
               </div>
               <div>
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Required</span>
-                <strong className="text-slate-900">{selectedNeed.quantity_needed.toLocaleString()} {selectedNeed.unit}</strong>
+                <span className="text-[10px] text-[#64748B] uppercase font-bold block">Total Required</span>
+                <strong>{selectedNeed.quantity_needed.toLocaleString()} {selectedNeed.unit}</strong>
               </div>
               <div>
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">Fulfilled Stock</span>
-                <strong className="text-emerald-700">{selectedNeed.quantity_fulfilled.toLocaleString()} {selectedNeed.unit}</strong>
+                <span className="text-[10px] text-[#64748B] uppercase font-bold block">Fulfilled Stock</span>
+                <strong className="text-[#2E7D32]">{selectedNeed.quantity_fulfilled.toLocaleString()} {selectedNeed.unit}</strong>
               </div>
               <div>
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">Remaining Deficit</span>
-                <strong className="text-rose-700 text-sm font-black">
+                <span className="text-[10px] text-[#64748B] uppercase font-bold block">Remaining Deficit</span>
+                <strong className="text-[#C62828] font-bold">
                   {remainingNeeded.toLocaleString()} {selectedNeed.unit}
                 </strong>
               </div>
             </div>
 
-            <div className="pt-2 flex justify-end">
+            <div className="pt-1 flex justify-end">
               <button
                 onClick={runMatchingEngine}
                 disabled={matchingLoading}
-                className="px-5 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded text-xs font-bold flex items-center gap-2 shadow-sm transition-colors"
+                className="px-4 py-1.5 bg-[#35698F] hover:bg-[#255273] text-white rounded text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors"
               >
                 {matchingLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFE082]" />
                     <span>Executing Greedy Match...</span>
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4 text-amber-300" />
+                    <Zap className="w-3.5 h-3.5 text-[#FFE082]" />
                     <span>RUN MATCHING ENGINE</span>
                   </>
                 )}
@@ -354,62 +348,47 @@ export default function Matching() {
             </div>
           </div>
         ) : (
-          <div className="p-6 text-center text-slate-500 font-mono text-xs">
+          <div className="p-4 text-center text-[#64748B] font-mono text-xs">
             SELECT A NEED TO BEGIN MATCHING
           </div>
         )}
       </div>
 
-      {/* MATCHING CRITERIA EXPLANATION BOX */}
-      <div className="bg-slate-900 border border-slate-800 text-white rounded-md p-4 shadow-sm font-mono text-xs">
-        <h4 className="font-bold text-amber-400 uppercase tracking-wider mb-2">
-          Greedy Matching Engine Criteria (SDD §4.2 / GreedyMatchingEngine)
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-slate-300 text-[11px]">
-          <div>✓ Resource status == 'AVAILABLE' &amp; quantity_available &gt; 0</div>
-          <div>✓ Centroid distance calculation (nearest proximity first)</div>
-          <div>✓ Greedy quantity allocation up to remaining deficit</div>
-          <div>✓ Transactional quantity transition: AVAILABLE → RESERVED</div>
-          <div>✓ Multi-agency pooled stock split aggregation</div>
-          <div>✓ Master PROPOSED Allocation record generation</div>
-        </div>
-      </div>
-
       {/* RECOMMENDED RESOURCES & MATCH RESULTS */}
       {matchingResult && (
-        <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-md shadow-sm overflow-hidden font-mono text-xs">
-            <div className="px-5 py-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-amber-400">
+        <div className="space-y-4 font-mono text-xs">
+          <div className="bg-white border border-[#D9E3EC] rounded shadow-2xs overflow-hidden">
+            <div className="px-4 py-2.5 bg-[#F4F8FC] border-b border-[#D9E3EC] flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-wide text-[#243447]">
                 RECOMMENDED MULTI-AGENCY RESOURCE SPLIT
               </h2>
-              <span className="text-[11px] text-slate-400">Status: PROPOSED</span>
+              <span className="text-[10px] px-2 py-0.5 bg-[#FFF8E1] text-[#D97706] border border-[#FFE082] font-bold rounded">PROPOSED</span>
             </div>
 
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 uppercase text-[10px]">
-                  <th className="p-3">Contributing Agency</th>
-                  <th className="p-3">Proximity Distance</th>
-                  <th className="p-3">Available Stock</th>
-                  <th className="p-3">Suggested Allocation</th>
-                  <th className="p-3">Status</th>
+                <tr className="bg-[#F4F8FC] border-b border-[#D9E3EC] text-[#64748B] uppercase text-[10px]">
+                  <th className="p-2.5">Contributing Agency</th>
+                  <th className="p-2.5">Proximity Distance</th>
+                  <th className="p-2.5">Available Stock</th>
+                  <th className="p-2.5">Suggested Allocation</th>
+                  <th className="p-2.5">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#D9E3EC]">
                 {matchingResult.items.map((item, i) => (
-                  <tr key={i} className="hover:bg-slate-50">
-                    <td className="p-3 font-bold text-slate-900 flex items-center gap-1.5">
-                      <Building2 className="w-4 h-4 text-blue-700 shrink-0" />
+                  <tr key={i} className="hover:bg-[#F4F8FC]">
+                    <td className="p-2.5 font-bold text-[#243447] flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-[#35698F] shrink-0" />
                       {item.agency_name}
                     </td>
-                    <td className="p-3 text-slate-700 font-semibold">{item.distance_km} km</td>
-                    <td className="p-3 text-slate-600">{item.available_stock.toLocaleString()} {item.unit}</td>
-                    <td className="p-3 font-black text-blue-900 text-sm">
+                    <td className="p-2.5 text-[#243447] font-semibold">{item.distance_km} km</td>
+                    <td className="p-2.5 text-[#64748B]">{item.available_stock.toLocaleString()} {item.unit}</td>
+                    <td className="p-2.5 font-bold text-[#1E425E]">
                       {item.quantity_allocated.toLocaleString()} {item.unit}
                     </td>
-                    <td className="p-3">
-                      <span className="px-2 py-0.5 bg-purple-100 text-purple-800 border border-purple-300 font-bold rounded text-[10px]">
+                    <td className="p-2.5">
+                      <span className="px-2 py-0.5 bg-[#FFF8E1] text-[#D97706] border border-[#FFE082] font-bold rounded text-[10px]">
                         RESERVED (PROPOSED)
                       </span>
                     </td>
@@ -419,77 +398,22 @@ export default function Matching() {
             </table>
           </div>
 
-          {/* MATCH SUMMARY & SHORTAGE WARNING */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-xs">
-            <div className="bg-white border border-slate-200 rounded-md p-5 shadow-sm space-y-3">
-              <h3 className="font-bold text-slate-900 uppercase tracking-wide border-b border-slate-200 pb-2">
-                MATCH FULFILLMENT SUMMARY
-              </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Total Required:</span>
-                  <strong className="text-slate-900">{selectedNeed?.quantity_needed.toLocaleString()} {selectedNeed?.unit}</strong>
-                </div>
-                <div className="flex justify-between text-emerald-700">
-                  <span>Currently Fulfilled:</span>
-                  <strong className="font-bold">{selectedNeed?.quantity_fulfilled.toLocaleString()} {selectedNeed?.unit}</strong>
-                </div>
-                <div className="flex justify-between text-blue-900 font-bold border-t border-slate-200 pt-1">
-                  <span>Matched Stock Found:</span>
-                  <strong className="text-sm">{matchedQty.toLocaleString()} {selectedNeed?.unit}</strong>
-                </div>
-              </div>
-
-              {unmatchedQty > 0 && (
-                <div className="p-3 bg-rose-50 border border-rose-300 rounded text-rose-800 flex items-center space-x-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>
-                    <strong>UNMATCHED REQUIREMENT:</strong> {unmatchedQty.toLocaleString()} {selectedNeed?.unit} STILL REQUIRED (Shortage warning)
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* AGENCY CONTRIBUTION BAR */}
-            <div className="bg-white border border-slate-200 rounded-md p-5 shadow-sm space-y-3">
-              <h3 className="font-bold text-slate-900 uppercase tracking-wide border-b border-slate-200 pb-2">
-                MULTI-AGENCY CONTRIBUTION BREAKDOWN
-              </h3>
-              <div className="space-y-3">
-                {matchingResult.items.map((item, i) => {
-                  const pct = Math.round((item.quantity_allocated / matchedQty) * 100);
-                  return (
-                    <div key={i} className="space-y-1">
-                      <div className="flex justify-between font-semibold">
-                        <span>{item.agency_name}</span>
-                        <span className="text-blue-900">{item.quantity_allocated.toLocaleString()} {item.unit} ({pct}%)</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div className="bg-blue-700 h-full" style={{ width: `${pct}%` }}></div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* CREATE ALLOCATION WORKFLOW ACTION */}
-          <div className="bg-white border border-slate-200 rounded-md p-5 shadow-sm font-mono text-xs flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* COMMIT ALLOCATION WORKFLOW */}
+          <div className="bg-white border border-[#D9E3EC] rounded p-4 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-3">
             <div>
-              <h4 className="font-bold text-slate-900 text-sm uppercase">Commit Matching Proposal</h4>
-              <p className="text-slate-500 text-[11px] mt-0.5">
-                Creates master allocation record and transactionally transitions allocated stock from AVAILABLE to RESERVED
+              <h4 className="font-bold text-[#243447] text-xs uppercase">Commit Matching Proposal</h4>
+              <p className="text-[#64748B] text-[11px] mt-0.5">
+                Creates allocation proposal and transitions stock state to RESERVED
               </p>
             </div>
 
             {allocationCreated ? (
-              <div className="p-3 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded font-bold flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-700" />
-                <span>ALLOCATION PROPOSED SUCCESSFULLY (#{allocationCreated.id || 'alloc-9901'})</span>
+              <div className="p-2.5 bg-[#E8F5E9] border border-[#A5D6A7] text-[#2E7D32] rounded font-bold flex items-center gap-2 text-xs">
+                <Check className="w-4 h-4 text-[#2E7D32]" />
+                <span>ALLOCATION PROPOSED (#{allocationCreated.id || 'alloc-9901'})</span>
                 <button
                   onClick={() => navigate('/allocations')}
-                  className="ml-3 px-3 py-1 bg-emerald-800 text-white rounded text-[10px] hover:bg-emerald-900"
+                  className="ml-2 px-2.5 py-1 bg-[#2E7D32] text-white rounded text-[10px] hover:bg-[#1B5E20]"
                 >
                   View Allocations →
                 </button>
@@ -498,9 +422,9 @@ export default function Matching() {
               <button
                 onClick={handleCreateAllocation}
                 disabled={matchingLoading}
-                className="px-6 py-2.5 bg-blue-800 hover:bg-blue-900 text-white font-extrabold rounded text-xs flex items-center gap-2 shadow-sm transition-colors"
+                className="px-4 py-2 bg-[#35698F] hover:bg-[#255273] text-white font-bold rounded text-xs flex items-center gap-1.5 shadow-2xs transition-colors"
               >
-                <Zap className="w-4 h-4 text-amber-300" />
+                <Zap className="w-4 h-4 text-[#FFE082]" />
                 <span>CREATE ALLOCATION (PROPOSE)</span>
               </button>
             )}

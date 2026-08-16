@@ -10,7 +10,7 @@ from app.models.user import User
 from app.schemas.need import NeedCreate, NeedListResponse, NeedResponse, NeedUpdate
 from app.services import need_service
 
-router = APIRouter(tags=["Needs"])
+router = APIRouter(prefix="/needs", tags=["Needs"])
 
 
 @router.get("/", response_model=NeedListResponse)

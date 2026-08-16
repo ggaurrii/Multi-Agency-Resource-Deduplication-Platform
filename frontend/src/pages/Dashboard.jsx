@@ -7,14 +7,9 @@ import {
   Truck,
   GitPullRequest,
   ArrowUpRight,
-  TrendingDown,
-  TrendingUp,
   MapPin,
   RefreshCw,
   Zap,
-  CheckCircle2,
-  Clock,
-  ExternalLink,
   ShieldAlert
 } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
@@ -61,415 +56,420 @@ export default function Dashboard() {
   return (
     <MainLayout title="SAHAYOG Command Center" unreadAlertsCount={summary?.unread_alerts_count || 0}>
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-md p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+      <div className="bg-white border border-[#D9E3EC] rounded p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 font-sans shadow-2xs">
         <div>
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-extrabold tracking-wide uppercase font-mono text-white">
-              SAHAYOG Command Center
+            <h1 className="text-lg font-bold tracking-wide uppercase font-mono text-[#243447]">
+              State Emergency Operations Center
             </h1>
-            <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-blue-900 text-blue-200 rounded border border-blue-700">
-              OPERATIONAL
+            <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-[#DCECF8] text-[#1E425E] rounded border border-[#8DB9D9]">
+              LIVE DISASTER CONTROL
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1 font-medium">
-            Multi-Agency Disaster Resource Coordination — Rajasthan Flood Response (Hadoti Sector)
+          <p className="text-xs text-[#64748B] mt-0.5 font-medium">
+            Hadoti Flood Relief & Multi-Agency Resource Coordination (Kota, Bundi, Baran, Jhalawar)
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs font-mono text-slate-200 transition-colors"
+            className="flex items-center space-x-1 px-3 py-1.5 bg-[#F4F8FC] hover:bg-[#DCECF8] border border-[#D9E3EC] rounded text-xs font-mono font-semibold text-[#243447] transition-colors"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-[#64748B] ${refreshing ? 'animate-spin' : ''}`} />
             <span>{refreshing ? 'Refreshing...' : 'Refresh Data'}</span>
           </button>
           <button
             onClick={() => navigate('/matching')}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-blue-700 hover:bg-blue-600 border border-blue-600 rounded text-xs font-mono font-semibold text-white shadow-sm transition-colors"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-[#35698F] hover:bg-[#255273] border border-[#255273] rounded text-xs font-mono font-bold text-white shadow-2xs transition-colors"
           >
-            <Zap className="w-3.5 h-3.5 text-amber-300" />
-            <span>Launch Matching Engine</span>
+            <Zap className="w-3.5 h-3.5 text-[#FFE082]" />
+            <span>Match Engine</span>
           </button>
         </div>
       </div>
 
-      {/* Development Mode Authorization Status Banner */}
       {summary?.is_demo_fallback && (
-        <div className="p-3 bg-amber-950/80 border border-amber-800/80 text-amber-200 rounded-md text-xs font-mono flex items-center justify-between shadow-sm">
+        <div className="p-3 bg-[#FFF8E1] border border-[#FFE082] text-[#854D0E] rounded text-xs font-mono flex items-center justify-between shadow-2xs">
           <div className="flex items-center space-x-2">
-            <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+            <ShieldAlert className="w-4 h-4 text-[#D97706] shrink-0" />
             <span>
-              <strong>DEV AUTH ACTIVE</strong> — Backend returned <code className="bg-amber-900 px-1 py-0.5 rounded text-amber-200">HTTP 403 Forbidden</code> (Live DB sync requires real JWT login). Displaying command center prototype metrics.
+              <strong>DEV AUTH ACTIVE</strong> — Live DB synchronization requires active JWT login. Displaying prototype command center state.
             </span>
           </div>
-          <span className="px-2 py-0.5 bg-amber-900 text-amber-300 rounded font-bold text-[10px] uppercase">
+          <span className="px-2 py-0.5 bg-[#FEF3C7] text-[#92400E] rounded font-bold text-[10px] uppercase border border-[#FDE68A]">
             Prototype View
           </span>
         </div>
       )}
 
-      {error && (
-        <div className="p-3 bg-rose-900/30 border border-rose-700/60 rounded text-xs text-rose-200 flex items-center justify-between font-mono">
-          <span>⚠️ {error}</span>
-          <button onClick={() => setError(null)} className="underline text-rose-300">Dismiss</button>
-        </div>
-      )}
-
-      {/* 1. TOP KPI CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Card 1: Critical Needs */}
-        <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm border-l-4 border-l-rose-600">
-          <div className="flex items-center justify-between text-xs font-mono text-slate-500 font-semibold uppercase">
-            <span>Critical Needs</span>
-            <AlertOctagon className="w-4 h-4 text-rose-600" />
+      {/* ACTIVE ALERTS SECTION */}
+      <div className="bg-white border border-[#D9E3EC] rounded p-4 font-mono text-xs shadow-2xs">
+        <div className="flex items-center justify-between border-b border-[#D9E3EC] pb-2 mb-3">
+          <div className="flex items-center space-x-2">
+            <span className="w-2 h-2 rounded-full bg-[#C62828] animate-pulse"></span>
+            <h2 className="text-xs font-bold text-[#243447] uppercase tracking-wide">
+              OPERATIONAL ALERTS
+            </h2>
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-rose-600">
-              {loading ? '...' : summary?.needs?.critical_count ?? 4}
-            </span>
-            <span className="text-[10px] font-mono text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded font-bold">
-              Immediate Action
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 mt-1">Deadline ≤ 2 hours</p>
+          <button
+            onClick={() => navigate('/notifications')}
+            className="text-[11px] font-bold text-[#35698F] hover:underline flex items-center gap-1"
+          >
+            <span>VIEW ALL ({summary?.unread_alerts_count || 3})</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        {/* Card 2: Open Needs */}
-        <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between text-xs font-mono text-slate-500 font-semibold uppercase">
-            <span>Open Needs</span>
-            <FileText className="w-4 h-4 text-amber-500" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="bg-[#FFEBEE] border border-[#FFCDD2] rounded p-2.5 text-xs space-y-1">
+            <div className="flex justify-between items-center font-bold">
+              <span className="text-[#C62828] flex items-center gap-1 text-[11px]">
+                <AlertOctagon className="w-3.5 h-3.5 text-[#C62828]" /> CRITICAL DEFICIT
+              </span>
+              <span className="text-[9px] bg-[#C62828] text-white px-1.5 py-0.5 rounded uppercase">Kota Sector</span>
+            </div>
+            <p className="font-bold text-[#243447] text-xs">Drinking Water Deficit: -10,000 L</p>
+            <p className="text-[11px] text-[#64748B]">Shelter camps requirement. Deadline ≤ 1.5h</p>
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-slate-900">
-              {loading ? '...' : summary?.needs?.open ?? 8}
-            </span>
-            <span className="text-[10px] font-mono text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-bold">
-              Unfulfilled
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 mt-1">Total Active Requisitions</p>
-        </div>
 
-        {/* Card 3: Available Resources */}
-        <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm border-l-4 border-l-emerald-600">
-          <div className="flex items-center justify-between text-xs font-mono text-slate-500 font-semibold uppercase">
-            <span>Available Stock</span>
-            <Boxes className="w-4 h-4 text-emerald-600" />
+          <div className="bg-[#FFF8E1] border border-[#FFE082] rounded p-2.5 text-xs space-y-1">
+            <div className="flex justify-between items-center font-bold">
+              <span className="text-[#D97706] flex items-center gap-1 text-[11px]">
+                <AlertOctagon className="w-3.5 h-3.5 text-[#D97706]" /> HIGH PRIORITY
+              </span>
+              <span className="text-[9px] bg-[#D97706] text-white px-1.5 py-0.5 rounded uppercase">Kota Sector</span>
+            </div>
+            <p className="font-bold text-[#243447] text-xs">Rescue Boats Needed: 15 Units</p>
+            <p className="text-[11px] text-[#64748B]">5/15 units matched. Additional 10 needed.</p>
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-emerald-700">
-              {loading ? '...' : (summary?.resources?.available ?? 78500).toLocaleString()}
-            </span>
-            <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold">
-              Pooled
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 mt-1">Ready for Dispatch</p>
-        </div>
 
-        {/* Card 4: Resources In Transit */}
-        <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm border-l-4 border-l-blue-600">
-          <div className="flex items-center justify-between text-xs font-mono text-slate-500 font-semibold uppercase">
-            <span>In Transit</span>
-            <Truck className="w-4 h-4 text-blue-600" />
+          <div className="bg-[#DCECF8] border border-[#8DB9D9] rounded p-2.5 text-xs space-y-1">
+            <div className="flex justify-between items-center font-bold">
+              <span className="text-[#1E425E] flex items-center gap-1 text-[11px]">
+                <Truck className="w-3.5 h-3.5 text-[#35698F]" /> ALLOCATION PROPOSED
+              </span>
+              <span className="text-[9px] bg-[#35698F] text-white px-1.5 py-0.5 rounded uppercase">#alloc-9901</span>
+            </div>
+            <p className="font-bold text-[#243447] text-xs">Proposal alloc-9901 Awaiting Review</p>
+            <p className="text-[11px] text-[#64748B]">6,000 L water matched (NDRF + Army).</p>
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-blue-700">
-              {loading ? '...' : (summary?.resources?.in_transit ?? 20500).toLocaleString()}
-            </span>
-            <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold">
-              En Route
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 mt-1">Authorized Shipments</p>
-        </div>
-
-        {/* Card 5: Active Allocations */}
-        <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm border-l-4 border-l-purple-600">
-          <div className="flex items-center justify-between text-xs font-mono text-slate-500 font-semibold uppercase">
-            <span>Allocations</span>
-            <GitPullRequest className="w-4 h-4 text-purple-600" />
-          </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-purple-700">
-              {loading ? '...' : (summary?.needs?.partially_met ?? 5) + (summary?.needs?.resolved ?? 5)}
-            </span>
-            <span className="text-[10px] font-mono text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded font-bold">
-              Active Match
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 mt-1">Proposed / Accepted</p>
         </div>
       </div>
 
-      {/* 2. MAIN CONTENT GRID: RESOURCE BALANCE & DISTRICT STATUS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* RESOURCE BALANCE SECTION (2 Cols) */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-md shadow-sm">
-          <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+      {error && (
+        <div className="p-3 bg-[#FFEBEE] border border-[#FFCDD2] rounded text-xs text-[#C62828] flex items-center justify-between font-mono">
+          <span>⚠️ {error}</span>
+          <button onClick={() => setError(null)} className="underline font-bold text-[#C62828]">Dismiss</button>
+        </div>
+      )}
+
+      {/* TOP COMPACT OPERATIONAL SUMMARY CARDS */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 font-mono">
+        <div className="bg-white border border-[#D9E3EC] border-t-3 border-t-[#C62828] rounded p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] text-[#64748B] font-bold uppercase">
+            <span>Critical Needs</span>
+            <AlertOctagon className="w-4 h-4 text-[#C62828]" />
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <span className="text-2xl font-bold text-[#C62828]">
+              {loading ? '...' : summary?.needs?.critical_count ?? 4}
+            </span>
+            <span className="text-[9px] text-[#C62828] bg-[#FFEBEE] px-1.5 py-0.5 rounded font-bold uppercase">
+              ≤ 2 Hours
+            </span>
+          </div>
+          <p className="text-[10px] text-[#64748B] mt-0.5">Immediate Requisition</p>
+        </div>
+
+        <div className="bg-white border border-[#D9E3EC] border-t-3 border-t-[#D97706] rounded p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] text-[#64748B] font-bold uppercase">
+            <span>Open Needs</span>
+            <FileText className="w-4 h-4 text-[#D97706]" />
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <span className="text-2xl font-bold text-[#243447]">
+              {loading ? '...' : summary?.needs?.open ?? 8}
+            </span>
+            <span className="text-[9px] text-[#D97706] bg-[#FEF3C7] px-1.5 py-0.5 rounded font-bold uppercase">
+              Unmet
+            </span>
+          </div>
+          <p className="text-[10px] text-[#64748B] mt-0.5">Active Demands</p>
+        </div>
+
+        <div className="bg-white border border-[#D9E3EC] border-t-3 border-t-[#2E7D32] rounded p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] text-[#64748B] font-bold uppercase">
+            <span>Available Stock</span>
+            <Boxes className="w-4 h-4 text-[#2E7D32]" />
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <span className="text-2xl font-bold text-[#2E7D32]">
+              {loading ? '...' : (summary?.resources?.available ?? 78500).toLocaleString()}
+            </span>
+            <span className="text-[9px] text-[#2E7D32] bg-[#E8F5E9] px-1.5 py-0.5 rounded font-bold uppercase">
+              Pooled
+            </span>
+          </div>
+          <p className="text-[10px] text-[#64748B] mt-0.5">Ready to Dispatch</p>
+        </div>
+
+        <div className="bg-white border border-[#D9E3EC] border-t-3 border-t-[#35698F] rounded p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] text-[#64748B] font-bold uppercase">
+            <span>In Transit</span>
+            <Truck className="w-4 h-4 text-[#35698F]" />
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <span className="text-2xl font-bold text-[#1E425E]">
+              {loading ? '...' : (summary?.resources?.in_transit ?? 20500).toLocaleString()}
+            </span>
+            <span className="text-[9px] text-[#1E425E] bg-[#DCECF8] px-1.5 py-0.5 rounded font-bold uppercase">
+              En Route
+            </span>
+          </div>
+          <p className="text-[10px] text-[#64748B] mt-0.5">Authorized Shipments</p>
+        </div>
+
+        <div className="bg-white border border-[#D9E3EC] border-t-3 border-t-[#6B21A8] rounded p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] text-[#64748B] font-bold uppercase">
+            <span>Allocations</span>
+            <GitPullRequest className="w-4 h-4 text-[#6B21A8]" />
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <span className="text-2xl font-bold text-[#6B21A8]">
+              {loading ? '...' : (summary?.needs?.partially_met ?? 5) + (summary?.needs?.resolved ?? 5)}
+            </span>
+            <span className="text-[9px] text-[#6B21A8] bg-[#F3E8FF] px-1.5 py-0.5 rounded font-bold uppercase">
+              Matched
+            </span>
+          </div>
+          <p className="text-[10px] text-[#64748B] mt-0.5">Proposed / Accepted</p>
+        </div>
+      </div>
+
+      {/* RESOURCE BALANCE MONITORING TABLE & DISTRICT STATUS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* RESOURCE BALANCE TABLE (2 Cols) */}
+        <div className="lg:col-span-2 bg-white border border-[#D9E3EC] rounded shadow-2xs">
+          <div className="px-4 py-3 border-b border-[#D9E3EC] bg-[#F4F8FC] flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold font-mono text-slate-900 uppercase tracking-wide">
-                Resource Balance & Allocation Stock
+              <h2 className="text-xs font-bold font-mono text-[#243447] uppercase tracking-wide">
+                Resource Availability & Allocation Stock
               </h2>
-              <p className="text-xs text-slate-500">
-                Pooled availability vs. reserved demand across all agencies
-              </p>
+              <p className="text-[11px] text-[#64748B]">Multi-Agency Deduplicated Inventory Monitoring</p>
             </div>
             <button
               onClick={() => navigate('/pool')}
-              className="text-xs font-mono text-blue-700 hover:text-blue-900 font-semibold flex items-center gap-1"
+              className="text-xs font-mono text-[#35698F] hover:underline font-bold flex items-center gap-1"
             >
-              <span>View Pool Breakdown</span>
+              <span>Pooled Inventory</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="p-5 space-y-5">
-            {/* Water */}
-            <div className="border border-slate-100 rounded-md p-3.5 bg-slate-50/50">
-              <div className="flex items-center justify-between text-xs font-mono mb-2">
-                <span className="font-bold text-slate-900 text-sm">Drinking Water (liters)</span>
-                <span className="px-2 py-0.5 bg-rose-100 text-rose-800 font-bold rounded text-[11px]">
-                  DEFICIT: -10,000 L
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 h-3.5 rounded-full overflow-hidden flex">
-                <div className="bg-emerald-500 h-full" style={{ width: '60%' }} title="Available: 15,000 L"></div>
-                <div className="bg-purple-500 h-full" style={{ width: '20%' }} title="Reserved: 5,000 L"></div>
-                <div className="bg-blue-500 h-full" style={{ width: '20%' }} title="In Transit: 5,000 L"></div>
-              </div>
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 mt-2">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Available: 15,000 L</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500"></span> Reserved: 5,000 L</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> In Transit: 5,000 L</span>
-                <span className="font-bold text-slate-900">Total Demand: 25,000 L</span>
-              </div>
-            </div>
-
-            {/* Rescue Boats */}
-            <div className="border border-slate-100 rounded-md p-3.5 bg-slate-50/50">
-              <div className="flex items-center justify-between text-xs font-mono mb-2">
-                <span className="font-bold text-slate-900 text-sm">Rescue Boats (units)</span>
-                <span className="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded text-[11px]">
-                  DEFICIT: -7 UNITS
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 h-3.5 rounded-full overflow-hidden flex">
-                <div className="bg-emerald-500 h-full" style={{ width: '70%' }} title="Available: 18 units"></div>
-                <div className="bg-purple-500 h-full" style={{ width: '15%' }} title="Reserved: 4 units"></div>
-                <div className="bg-blue-500 h-full" style={{ width: '15%' }} title="In Transit: 4 units"></div>
-              </div>
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 mt-2">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Available: 18</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500"></span> Reserved: 4</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> In Transit: 4</span>
-                <span className="font-bold text-slate-900">Total Demand: 25</span>
-              </div>
-            </div>
-
-            {/* Food Packets */}
-            <div className="border border-slate-100 rounded-md p-3.5 bg-slate-50/50">
-              <div className="flex items-center justify-between text-xs font-mono mb-2">
-                <span className="font-bold text-slate-900 text-sm">Food Ration Packets</span>
-                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[11px]">
-                  SURPLUS: +4,000 PACKETS
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 h-3.5 rounded-full overflow-hidden flex">
-                <div className="bg-emerald-500 h-full" style={{ width: '75%' }} title="Available: 12,000"></div>
-                <div className="bg-purple-500 h-full" style={{ width: '15%' }} title="Reserved: 2,000"></div>
-                <div className="bg-blue-500 h-full" style={{ width: '10%' }} title="In Transit: 1,000"></div>
-              </div>
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 mt-2">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Available: 12,000</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500"></span> Reserved: 2,000</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> In Transit: 1,000</span>
-                <span className="font-bold text-slate-900">Total Demand: 8,000</span>
-              </div>
-            </div>
-
-            {/* Ambulances */}
-            <div className="border border-slate-100 rounded-md p-3.5 bg-slate-50/50">
-              <div className="flex items-center justify-between text-xs font-mono mb-2">
-                <span className="font-bold text-slate-900 text-sm">Medical Ambulances</span>
-                <span className="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded text-[11px]">
-                  DEFICIT: -4 UNITS
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 h-3.5 rounded-full overflow-hidden flex">
-                <div className="bg-emerald-500 h-full" style={{ width: '65%' }} title="Available: 8"></div>
-                <div className="bg-purple-500 h-full" style={{ width: '20%' }} title="Reserved: 2"></div>
-                <div className="bg-blue-500 h-full" style={{ width: '15%' }} title="In Transit: 2"></div>
-              </div>
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 mt-2">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Available: 8</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500"></span> Reserved: 2</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> In Transit: 2</span>
-                <span className="font-bold text-slate-900">Total Demand: 12</span>
-              </div>
-            </div>
+          <div className="p-4 space-y-4 font-mono text-xs">
+            {/* Table layout */}
+            <table className="w-full text-left border-collapse border border-[#D9E3EC]">
+              <thead>
+                <tr className="bg-[#F4F8FC] border-b border-[#D9E3EC] text-[#64748B] uppercase text-[10px]">
+                  <th className="p-2.5">Resource</th>
+                  <th className="p-2.5">Available</th>
+                  <th className="p-2.5">Reserved</th>
+                  <th className="p-2.5">In Transit</th>
+                  <th className="p-2.5">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#D9E3EC]">
+                <tr className="hover:bg-[#F4F8FC]">
+                  <td className="p-2.5 font-bold text-[#243447]">DRINKING WATER</td>
+                  <td className="p-2.5 text-[#2E7D32] font-bold">15,000 L</td>
+                  <td className="p-2.5 text-[#CA8A04] font-bold">3,000 L</td>
+                  <td className="p-2.5 text-[#35698F] font-bold">5,000 L</td>
+                  <td className="p-2.5">
+                    <span className="px-2 py-0.5 bg-[#FFEBEE] text-[#C62828] border border-[#FFCDD2] text-[10px] font-bold rounded">
+                      DEFICIT (-10k L)
+                    </span>
+                  </td>
+                </tr>
+                <tr className="hover:bg-[#F4F8FC]">
+                  <td className="p-2.5 font-bold text-[#243447]">RESCUE BOATS</td>
+                  <td className="p-2.5 text-[#2E7D32] font-bold">18 units</td>
+                  <td className="p-2.5 text-[#CA8A04] font-bold">5 units</td>
+                  <td className="p-2.5 text-[#35698F] font-bold">7 units</td>
+                  <td className="p-2.5">
+                    <span className="px-2 py-0.5 bg-[#FFF8E1] text-[#D97706] border border-[#FFE082] text-[10px] font-bold rounded">
+                      DEFICIT (-7)
+                    </span>
+                  </td>
+                </tr>
+                <tr className="hover:bg-[#F4F8FC]">
+                  <td className="p-2.5 font-bold text-[#243447]">FOOD PACKETS</td>
+                  <td className="p-2.5 text-[#2E7D32] font-bold">12,000 pkts</td>
+                  <td className="p-2.5 text-[#CA8A04] font-bold">2,000 pkts</td>
+                  <td className="p-2.5 text-[#35698F] font-bold">1,000 pkts</td>
+                  <td className="p-2.5">
+                    <span className="px-2 py-0.5 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[10px] font-bold rounded">
+                      SURPLUS (+4k)
+                    </span>
+                  </td>
+                </tr>
+                <tr className="hover:bg-[#F4F8FC]">
+                  <td className="p-2.5 font-bold text-[#243447]">AMBULANCES</td>
+                  <td className="p-2.5 text-[#2E7D32] font-bold">8 units</td>
+                  <td className="p-2.5 text-[#CA8A04] font-bold">2 units</td>
+                  <td className="p-2.5 text-[#35698F] font-bold">2 units</td>
+                  <td className="p-2.5">
+                    <span className="px-2 py-0.5 bg-[#DCECF8] text-[#1E425E] border border-[#8DB9D9] text-[10px] font-bold rounded">
+                      STABLE
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* DISTRICT STATUS SECTION (1 Col) */}
-        <div className="bg-white border border-slate-200 rounded-md shadow-sm flex flex-col">
-          <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50">
-            <h2 className="text-sm font-bold font-mono text-slate-900 uppercase tracking-wide">
-              District Sector Status
+        {/* DISTRICT STATUS BOARD (1 Col) */}
+        <div className="bg-white border border-[#D9E3EC] rounded shadow-2xs flex flex-col font-mono text-xs">
+          <div className="px-4 py-3 border-b border-[#D9E3EC] bg-[#F4F8FC]">
+            <h2 className="text-xs font-bold text-[#243447] uppercase tracking-wide">
+              District Operations Board
             </h2>
-            <p className="text-xs text-slate-500">Hadoti Region Administrative Sectors</p>
+            <p className="text-[11px] text-[#64748B]">Hadoti Regional Emergency Status</p>
           </div>
 
-          <div className="p-4 space-y-3 flex-1">
-            {/* Kota */}
-            <div className="border border-rose-200 bg-rose-50/50 rounded p-3 text-xs">
-              <div className="flex items-center justify-between font-mono font-bold">
-                <span className="text-sm text-slate-900 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-rose-600" /> KOTA
+          <div className="p-3 space-y-2 flex-1">
+            <div className="border border-[#FFCDD2] bg-[#FFEBEE]/50 rounded p-2.5 space-y-1">
+              <div className="flex items-center justify-between font-bold">
+                <span className="text-[#243447] flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-[#C62828]" /> KOTA SECTOR
                 </span>
-                <span className="px-2 py-0.5 bg-rose-600 text-white rounded text-[10px]">CRITICAL</span>
+                <span className="px-1.5 py-0.5 bg-[#C62828] text-white text-[9px] font-bold rounded">CRITICAL</span>
               </div>
-              <div className="mt-2 grid grid-cols-2 gap-2 font-mono text-slate-700 text-[11px]">
-                <div>Water Deficit: <span className="font-bold text-rose-700">-4,500 L</span></div>
-                <div>Open Needs: <span className="font-bold">8</span></div>
-                <div>Agencies Present: <span className="font-bold">4 (NDRF/Army)</span></div>
-                <div>Priority: <span className="font-bold text-rose-700">CRITICAL (1.5h)</span></div>
+              <div className="text-[11px] text-[#64748B] font-semibold">
+                Water Deficit: <strong className="text-[#C62828]">-4,500 L</strong> | Open Needs: <strong>8</strong>
               </div>
             </div>
 
-            {/* Bundi */}
-            <div className="border border-amber-200 bg-amber-50/50 rounded p-3 text-xs">
-              <div className="flex items-center justify-between font-mono font-bold">
-                <span className="text-sm text-slate-900 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-amber-600" /> BUNDI
+            <div className="border border-[#FFE082] bg-[#FFF8E1]/50 rounded p-2.5 space-y-1">
+              <div className="flex items-center justify-between font-bold">
+                <span className="text-[#243447] flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-[#D97706]" /> BUNDI SECTOR
                 </span>
-                <span className="px-2 py-0.5 bg-amber-600 text-white rounded text-[10px]">HIGH ALERT</span>
+                <span className="px-1.5 py-0.5 bg-[#D97706] text-white text-[9px] font-bold rounded">HIGH ALERT</span>
               </div>
-              <div className="mt-2 grid grid-cols-2 gap-2 font-mono text-slate-700 text-[11px]">
-                <div>Food Balance: <span className="font-bold text-emerald-700">+4,000 PKT</span></div>
-                <div>Open Needs: <span className="font-bold">4</span></div>
-                <div>Agencies Present: <span className="font-bold">3 (SDRF/NGO)</span></div>
-                <div>Priority: <span className="font-bold text-amber-700">HIGH (4.0h)</span></div>
+              <div className="text-[11px] text-[#64748B] font-semibold">
+                Food Balance: <strong className="text-[#2E7D32]">+4,000 PKT</strong> | Open Needs: <strong>4</strong>
               </div>
             </div>
 
-            {/* Baran */}
-            <div className="border border-amber-200 bg-amber-50/50 rounded p-3 text-xs">
-              <div className="flex items-center justify-between font-mono font-bold">
-                <span className="text-sm text-slate-900 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-amber-600" /> BARAN
+            <div className="border border-[#FFE082] bg-[#FFF8E1]/50 rounded p-2.5 space-y-1">
+              <div className="flex items-center justify-between font-bold">
+                <span className="text-[#243447] flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-[#D97706]" /> BARAN SECTOR
                 </span>
-                <span className="px-2 py-0.5 bg-amber-600 text-white rounded text-[10px]">HIGH ALERT</span>
+                <span className="px-1.5 py-0.5 bg-[#D97706] text-white text-[9px] font-bold rounded">HIGH ALERT</span>
               </div>
-              <div className="mt-2 grid grid-cols-2 gap-2 font-mono text-slate-700 text-[11px]">
-                <div>Ambulance Deficit: <span className="font-bold text-rose-700">-4 Units</span></div>
-                <div>Open Needs: <span className="font-bold">3</span></div>
-                <div>Agencies Present: <span className="font-bold">2 (Army/Health)</span></div>
-                <div>Priority: <span className="font-bold text-amber-700">HIGH (5.5h)</span></div>
+              <div className="text-[11px] text-[#64748B] font-semibold">
+                Ambulance Deficit: <strong className="text-[#C62828]">-4 Units</strong> | Open Needs: <strong>3</strong>
               </div>
             </div>
 
-            {/* Jhalawar */}
-            <div className="border border-emerald-200 bg-emerald-50/50 rounded p-3 text-xs">
-              <div className="flex items-center justify-between font-mono font-bold">
-                <span className="text-sm text-slate-900 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-emerald-600" /> JHALAWAR
+            <div className="border border-[#A5D6A7] bg-[#E8F5E9]/50 rounded p-2.5 space-y-1">
+              <div className="flex items-center justify-between font-bold">
+                <span className="text-[#243447] flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-[#2E7D32]" /> JHALAWAR SECTOR
                 </span>
-                <span className="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px]">STABLE / SURPLUS</span>
+                <span className="px-1.5 py-0.5 bg-[#2E7D32] text-white text-[9px] font-bold rounded">STABLE</span>
               </div>
-              <div className="mt-2 grid grid-cols-2 gap-2 font-mono text-slate-700 text-[11px]">
-                <div>Generators Surplus: <span className="font-bold text-emerald-700">+4 Units</span></div>
-                <div>Open Needs: <span className="font-bold">1</span></div>
-                <div>Agencies Present: <span className="font-bold">2 (SDRF/Local)</span></div>
-                <div>Priority: <span className="font-bold text-emerald-700">LOW (28h)</span></div>
+              <div className="text-[11px] text-[#64748B] font-semibold">
+                Generator Surplus: <strong className="text-[#2E7D32]">+4 Units</strong> | Open Needs: <strong>1</strong>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. CRITICAL NEEDS TABLE & RECENT ALLOCATIONS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* CRITICAL NEEDS TABLE */}
-        <div className="bg-white border border-slate-200 rounded-md shadow-sm flex flex-col">
-          <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <AlertOctagon className="w-4 h-4 text-rose-600" />
-              <h2 className="text-sm font-bold font-mono text-slate-900 uppercase tracking-wide">
+      {/* REQUISITIONS & ALLOCATIONS DISPATCH */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* REQUISITIONS */}
+        <div className="bg-white border border-[#D9E3EC] rounded shadow-2xs flex flex-col font-mono text-xs">
+          <div className="px-4 py-3 border-b border-[#D9E3EC] bg-[#F4F8FC] flex items-center justify-between">
+            <div className="flex items-center space-x-1.5">
+              <AlertOctagon className="w-4 h-4 text-[#C62828]" />
+              <h2 className="text-xs font-bold text-[#243447] uppercase tracking-wide">
                 Critical Priority Requisitions
               </h2>
             </div>
             <button
               onClick={() => navigate('/needs')}
-              className="text-xs font-mono text-blue-700 hover:text-blue-900 font-semibold"
+              className="text-xs font-bold text-[#35698F] hover:underline"
             >
-              View All Needs ({summary?.needs?.total_needs ?? 18})
+              View All ({summary?.needs?.total_needs ?? 18})
             </button>
           </div>
 
           <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left border-collapse text-xs font-mono">
+            <table className="w-full text-left border-collapse border-b border-[#D9E3EC]">
               <thead>
-                <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 uppercase text-[10px]">
-                  <th className="p-3">District</th>
-                  <th className="p-3">Resource</th>
-                  <th className="p-3">Req / Fulfilled</th>
-                  <th className="p-3">Priority</th>
-                  <th className="p-3">Action</th>
+                <tr className="bg-[#F4F8FC] border-b border-[#D9E3EC] text-[#64748B] uppercase text-[10px]">
+                  <th className="p-2.5">District</th>
+                  <th className="p-2.5">Resource</th>
+                  <th className="p-2.5">Req / Fulfilled</th>
+                  <th className="p-2.5">Priority</th>
+                  <th className="p-2.5">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                <tr className="hover:bg-slate-50/80">
-                  <td className="p-3 font-bold text-slate-900">Kota</td>
-                  <td className="p-3 font-semibold text-blue-900">DRINKING_WATER</td>
-                  <td className="p-3">10,000 / <span className="text-amber-700">2,500 L</span></td>
-                  <td className="p-3">
-                    <span className="px-2 py-0.5 bg-rose-600 text-white text-[10px] font-bold rounded">
+              <tbody className="divide-y divide-[#D9E3EC]">
+                <tr className="hover:bg-[#F4F8FC]">
+                  <td className="p-2.5 font-bold text-[#243447]">Kota</td>
+                  <td className="p-2.5 font-semibold text-[#1E425E]">DRINKING_WATER</td>
+                  <td className="p-2.5">10,000 / <span className="text-[#D97706] font-bold">2,500 L</span></td>
+                  <td className="p-2.5">
+                    <span className="px-1.5 py-0.5 bg-[#C62828] text-white text-[9px] font-bold rounded">
                       CRITICAL (1.5h)
                     </span>
                   </td>
-                  <td className="p-3">
+                  <td className="p-2.5">
                     <button
                       onClick={() => navigate('/matching')}
-                      className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded text-[10px] font-bold"
+                      className="px-2 py-0.5 bg-[#35698F] hover:bg-[#255273] text-white rounded text-[10px] font-bold"
                     >
                       Match Stock
                     </button>
                   </td>
                 </tr>
-                <tr className="hover:bg-slate-50/80">
-                  <td className="p-3 font-bold text-slate-900">Kota</td>
-                  <td className="p-3 font-semibold text-blue-900">BOAT</td>
-                  <td className="p-3">15 / <span className="text-amber-700">5 units</span></td>
-                  <td className="p-3">
-                    <span className="px-2 py-0.5 bg-rose-600 text-white text-[10px] font-bold rounded">
+                <tr className="hover:bg-[#F4F8FC]">
+                  <td className="p-2.5 font-bold text-[#243447]">Kota</td>
+                  <td className="p-2.5 font-semibold text-[#1E425E]">BOAT</td>
+                  <td className="p-2.5">15 / <span className="text-[#D97706] font-bold">5 units</span></td>
+                  <td className="p-2.5">
+                    <span className="px-1.5 py-0.5 bg-[#C62828] text-white text-[9px] font-bold rounded">
                       CRITICAL (1.8h)
                     </span>
                   </td>
-                  <td className="p-3">
+                  <td className="p-2.5">
                     <button
                       onClick={() => navigate('/matching')}
-                      className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded text-[10px] font-bold"
+                      className="px-2 py-0.5 bg-[#35698F] hover:bg-[#255273] text-white rounded text-[10px] font-bold"
                     >
                       Match Stock
                     </button>
                   </td>
                 </tr>
-                <tr className="hover:bg-slate-50/80">
-                  <td className="p-3 font-bold text-slate-900">Baran</td>
-                  <td className="p-3 font-semibold text-blue-900">AMBULANCE</td>
-                  <td className="p-3">6 / <span className="text-amber-700">2 units</span></td>
-                  <td className="p-3">
-                    <span className="px-2 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded">
+                <tr className="hover:bg-[#F4F8FC]">
+                  <td className="p-2.5 font-bold text-[#243447]">Baran</td>
+                  <td className="p-2.5 font-semibold text-[#1E425E]">AMBULANCE</td>
+                  <td className="p-2.5">6 / <span className="text-[#D97706] font-bold">2 units</span></td>
+                  <td className="p-2.5">
+                    <span className="px-1.5 py-0.5 bg-[#D97706] text-white text-[9px] font-bold rounded">
                       HIGH (4.2h)
                     </span>
                   </td>
-                  <td className="p-3">
+                  <td className="p-2.5">
                     <button
                       onClick={() => navigate('/matching')}
-                      className="px-2.5 py-1 bg-slate-700 hover:bg-slate-800 text-white rounded text-[10px] font-bold"
+                      className="px-2 py-0.5 bg-[#64748B] hover:bg-[#475569] text-white rounded text-[10px] font-bold"
                     >
                       Match Stock
                     </button>
@@ -480,60 +480,60 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* RECENT ALLOCATIONS TABLE */}
-        <div className="bg-white border border-slate-200 rounded-md shadow-sm flex flex-col">
-          <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Truck className="w-4 h-4 text-blue-600" />
-              <h2 className="text-sm font-bold font-mono text-slate-900 uppercase tracking-wide">
+        {/* ALLOCATIONS */}
+        <div className="bg-white border border-[#D9E3EC] rounded shadow-2xs flex flex-col font-mono text-xs">
+          <div className="px-4 py-3 border-b border-[#D9E3EC] bg-[#F4F8FC] flex items-center justify-between">
+            <div className="flex items-center space-x-1.5">
+              <Truck className="w-4 h-4 text-[#35698F]" />
+              <h2 className="text-xs font-bold text-[#243447] uppercase tracking-wide">
                 Recent Allocation Dispatch
               </h2>
             </div>
             <button
               onClick={() => navigate('/allocations')}
-              className="text-xs font-mono text-blue-700 hover:text-blue-900 font-semibold"
+              className="text-xs font-bold text-[#35698F] hover:underline"
             >
               Manage Allocations
             </button>
           </div>
 
           <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left border-collapse text-xs font-mono">
+            <table className="w-full text-left border-collapse border-b border-[#D9E3EC]">
               <thead>
-                <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 uppercase text-[10px]">
-                  <th className="p-3">Agency</th>
-                  <th className="p-3">Resource Split</th>
-                  <th className="p-3">Distance</th>
-                  <th className="p-3">Status</th>
+                <tr className="bg-[#F4F8FC] border-b border-[#D9E3EC] text-[#64748B] uppercase text-[10px]">
+                  <th className="p-2.5">Agency</th>
+                  <th className="p-2.5">Resource Split</th>
+                  <th className="p-2.5">Distance</th>
+                  <th className="p-2.5">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                <tr className="hover:bg-slate-50/80">
-                  <td className="p-3 font-bold text-slate-900">NDRF Kota</td>
-                  <td className="p-3">4,000 L Water</td>
-                  <td className="p-3 text-slate-600">12 km</td>
-                  <td className="p-3">
-                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 border border-blue-300 font-bold rounded text-[10px]">
+              <tbody className="divide-y divide-[#D9E3EC]">
+                <tr className="hover:bg-[#F4F8FC]">
+                  <td className="p-2.5 font-bold text-[#243447]">NDRF Kota</td>
+                  <td className="p-2.5 font-semibold text-[#1E425E]">4,000 L Water</td>
+                  <td className="p-2.5 text-[#64748B]">12 km</td>
+                  <td className="p-2.5">
+                    <span className="px-1.5 py-0.5 bg-[#DCECF8] text-[#1E425E] border border-[#8DB9D9] font-bold rounded text-[9px]">
                       IN_TRANSIT
                     </span>
                   </td>
                 </tr>
-                <tr className="hover:bg-slate-50/80">
-                  <td className="p-3 font-bold text-slate-900">Army 61 Bn</td>
-                  <td className="p-3">3,500 L Water</td>
-                  <td className="p-3 text-slate-600">28 km</td>
-                  <td className="p-3">
-                    <span className="px-2 py-0.5 bg-purple-100 text-purple-800 border border-purple-300 font-bold rounded text-[10px]">
+                <tr className="hover:bg-[#F4F8FC]">
+                  <td className="p-2.5 font-bold text-[#243447]">Army 61 Bn</td>
+                  <td className="p-2.5 font-semibold text-[#1E425E]">3,500 L Water</td>
+                  <td className="p-2.5 text-[#64748B]">28 km</td>
+                  <td className="p-2.5">
+                    <span className="px-1.5 py-0.5 bg-[#FFF8E1] text-[#D97706] border border-[#FFE082] font-bold rounded text-[9px]">
                       PROPOSED
                     </span>
                   </td>
                 </tr>
-                <tr className="hover:bg-slate-50/80">
-                  <td className="p-3 font-bold text-slate-900">NGO Sahayata</td>
-                  <td className="p-3">2,000 Food Pkts</td>
-                  <td className="p-3 text-slate-600">14 km</td>
-                  <td className="p-3">
-                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold rounded text-[10px]">
+                <tr className="hover:bg-[#F4F8FC]">
+                  <td className="p-2.5 font-bold text-[#243447]">NGO Sahayata</td>
+                  <td className="p-2.5 font-semibold text-[#1E425E]">2,000 Food Pkts</td>
+                  <td className="p-2.5 text-[#64748B]">14 km</td>
+                  <td className="p-2.5">
+                    <span className="px-1.5 py-0.5 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] font-bold rounded text-[9px]">
                       ACCEPTED
                     </span>
                   </td>
