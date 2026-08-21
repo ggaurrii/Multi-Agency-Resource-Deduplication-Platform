@@ -6,6 +6,7 @@ Loads settings from environment variables via pydantic-settings.
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +34,28 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://sahayog:sahayog_dev_password@db:5432/sahayog"
     database_url_sync: str = "postgresql+psycopg2://sahayog:sahayog_dev_password@db:5432/sahayog"
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def assemble_async_db_url(cls, v: str | None) -> str:
+        if not v:
+            return "postgresql+asyncpg://sahayog:sahayog_dev_password@db:5432/sahayog"
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+asyncpg://", 1)
+        if v.startswith("postgresql://") and not v.startswith("postgresql+"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
+
+    @field_validator("database_url_sync", mode="before")
+    @classmethod
+    def assemble_sync_db_url(cls, v: str | None) -> str:
+        if not v:
+            return "postgresql+psycopg2://sahayog:sahayog_dev_password@db:5432/sahayog"
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+psycopg2://", 1)
+        if v.startswith("postgresql://") and not v.startswith("postgresql+"):
+            return v.replace("postgresql://", "postgresql+psycopg2://", 1)
+        return v
+
     # ── JWT ──────────────────────────────────────────────────
     jwt_secret_key: str = "CHANGE_ME"
     jwt_algorithm: str = "HS256"
@@ -44,3 +67,4 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Return cached settings instance."""
     return Settings()
+
