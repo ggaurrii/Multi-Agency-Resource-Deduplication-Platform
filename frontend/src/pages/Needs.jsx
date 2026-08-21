@@ -13,8 +13,17 @@ import {
   ShieldAlert,
   Search,
   RotateCcw,
-  MapPin
+  Loader2,
+  AlertTriangle,
+  Check
 } from 'lucide-react';
+
+const DISTRICT_OPTIONS = [
+  { id: '70d4b8aa-050d-584c-b7f0-faea542083d7', name: 'Kota' },
+  { id: '7d015e2d-e657-5302-9ad8-3201ddb853a6', name: 'Bundi' },
+  { id: '42c99de7-fffc-51db-a2dc-d72b5848d5ea', name: 'Baran' },
+  { id: '405fcfda-0929-5f19-9f80-b42f9c298021', name: 'Jhalawar' },
+];
 
 export default function Needs() {
   const navigate = useNavigate();
@@ -29,6 +38,28 @@ export default function Needs() {
   const [resourceTypeFilter, setResourceTypeFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  // Create Requisition Modal State
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState(null);
+  const [createSuccess, setCreateSuccess] = useState(null);
+
+  const getDefaultDeadline = () => {
+    const d = new Date();
+    d.setHours(d.getHours() + 4);
+    // Format for datetime-local input YYYY-MM-DDTHH:mm
+    const tzOffset = d.getTimezoneOffset() * 60000;
+    const localISOTime = new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+    return localISOTime;
+  };
+
+  const [createForm, setCreateForm] = useState({
+    district_id: '70d4b8aa-050d-584c-b7f0-faea542083d7',
+    resource_type: 'FOOD_PACKET',
+    quantity_needed: 1000,
+    deadline: getDefaultDeadline(),
+  });
 
   const fetchNeeds = async () => {
     setLoading(true);
@@ -59,6 +90,50 @@ export default function Needs() {
     setResourceTypeFilter('');
     setPriorityFilter('');
     setStatusFilter('');
+  };
+
+  const handleCreateNeedSubmit = async (e) => {
+    e.preventDefault();
+    setCreateLoading(true);
+    setCreateError(null);
+
+    try {
+      if (Number(createForm.quantity_needed) <= 0) {
+        setCreateError('Required quantity must be greater than 0.');
+        setCreateLoading(false);
+        return;
+      }
+
+      const deadlineDate = new Date(createForm.deadline);
+      if (isNaN(deadlineDate.getTime()) || deadlineDate <= new Date()) {
+        setCreateError('Deadline must be a valid future date and time.');
+        setCreateLoading(false);
+        return;
+      }
+
+      const payload = {
+        district_id: createForm.district_id,
+        resource_type: createForm.resource_type,
+        quantity_needed: Number(createForm.quantity_needed),
+        deadline: deadlineDate.toISOString(),
+      };
+
+      const res = await sahayogApi.createNeed(payload);
+      if (res && res.id) {
+        setCreateSuccess(`Requisition #${res.id.slice(0, 8)} created successfully!`);
+        setShowCreateModal(false);
+        fetchNeeds(); // Refresh live table
+      }
+    } catch (err) {
+      console.error('Failed to create need:', err);
+      const detail = err.response?.data?.detail;
+      const msg = typeof detail === 'string'
+        ? detail
+        : detail?.error?.message || err.message || 'Failed to submit requisition.';
+      setCreateError(msg);
+    } finally {
+      setCreateLoading(false);
+    }
   };
 
   const mockNeeds = [
@@ -97,30 +172,6 @@ export default function Needs() {
       deadline: '2026-08-16T07:30:00Z',
       status: 'OPEN',
       created_at: '2026-08-15T22:00:00Z',
-    },
-    {
-      id: 'n-1045-bundi-food',
-      district_name: 'Bundi',
-      resource_type: 'FOOD_PACKET',
-      quantity_needed: 5000,
-      quantity_fulfilled: 5000,
-      unit: 'packets',
-      priority: 'MEDIUM',
-      deadline: '2026-08-16T18:00:00Z',
-      status: 'RESOLVED',
-      created_at: '2026-08-15T18:00:00Z',
-    },
-    {
-      id: 'n-1046-jhalawar-gen',
-      district_name: 'Jhalawar',
-      resource_type: 'GENERATOR',
-      quantity_needed: 8,
-      quantity_fulfilled: 8,
-      unit: 'units',
-      priority: 'LOW',
-      deadline: '2026-08-17T12:00:00Z',
-      status: 'RESOLVED',
-      created_at: '2026-08-15T15:00:00Z',
     },
   ];
 
@@ -187,11 +238,33 @@ export default function Needs() {
             Monitor, prioritize and resolve disaster resource requirements across affected districts
           </p>
         </div>
-        <button className="px-3.5 py-1.5 bg-[#35698F] hover:bg-[#255273] text-white rounded text-xs font-mono font-bold flex items-center gap-1.5 shadow-2xs transition-colors">
+        <button
+          onClick={() => {
+            setCreateError(null);
+            setShowCreateModal(true);
+          }}
+          className="px-3.5 py-1.5 bg-[#35698F] hover:bg-[#255273] text-white rounded text-xs font-mono font-bold flex items-center gap-1.5 shadow-2xs transition-colors"
+        >
           <Plus className="w-4 h-4" />
           <span>File New Requisition</span>
         </button>
       </div>
+
+      {/* SUCCESS BANNER */}
+      {createSuccess && (
+        <div className="p-3 bg-[#E8F5E9] border border-[#A5D6A7] text-[#2E7D32] rounded text-xs font-mono flex items-center justify-between shadow-2xs">
+          <div className="flex items-center space-x-2">
+            <Check className="w-4 h-4 text-[#2E7D32] shrink-0" />
+            <span><strong>SUCCESS</strong> — {createSuccess}</span>
+          </div>
+          <button
+            onClick={() => setCreateSuccess(null)}
+            className="text-[#2E7D32] underline font-bold text-[10px] uppercase"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {isDemoFallback && (
         <div className="p-3 bg-[#FFF8E1] border border-[#FFE082] text-[#854D0E] rounded text-xs font-mono flex items-center justify-between shadow-2xs">
@@ -359,14 +432,14 @@ export default function Needs() {
             </thead>
             <tbody className="divide-y divide-[#D9E3EC]">
               {itemsToDisplay.map((item) => {
-                const remaining = item.quantity_needed - item.quantity_fulfilled;
+                const remaining = (Number(item.quantity_needed) || 0) - (Number(item.quantity_fulfilled) || 0);
                 return (
                   <tr key={item.id} className="hover:bg-[#F4F8FC]">
                     <td className="p-2.5 font-bold text-[#243447]">#{item.id.slice(0, 8)}</td>
                     <td className="p-2.5 font-bold text-[#243447]">{item.district_name || 'Kota'}</td>
                     <td className="p-2.5 font-semibold text-[#1E425E]">{item.resource_type}</td>
-                    <td className="p-2.5 font-bold">{item.quantity_needed.toLocaleString()} {item.unit}</td>
-                    <td className="p-2.5 text-[#2E7D32]">{item.quantity_fulfilled.toLocaleString()} {item.unit}</td>
+                    <td className="p-2.5 font-bold">{Number(item.quantity_needed || 0).toLocaleString()} {item.unit}</td>
+                    <td className="p-2.5 text-[#2E7D32]">{Number(item.quantity_fulfilled || 0).toLocaleString()} {item.unit}</td>
                     <td className="p-2.5 font-bold text-[#C62828] text-sm">
                       {remaining.toLocaleString()} {item.unit}
                     </td>
@@ -409,6 +482,131 @@ export default function Needs() {
           </table>
         )}
       </div>
+
+      {/* CREATE REQUISITION MODAL */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white rounded border border-[#D9E3EC] shadow-2xl font-mono text-xs">
+            <div className="p-4 bg-[#F4F8FC] border-b border-[#D9E3EC] flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <FileQuestion className="w-5 h-5 text-[#35698F]" />
+                <h3 className="font-bold text-[#243447] text-sm uppercase tracking-wide">
+                  FILE NEW RELIEF REQUISITION
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-1 text-[#64748B] hover:text-[#243447]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateNeedSubmit} className="p-5 space-y-4">
+              {createError && (
+                <div className="p-3 bg-[#FFEBEE] border border-[#FFCDD2] text-[#C62828] rounded flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{createError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#64748B] uppercase mb-1">
+                  Target District:
+                </label>
+                <select
+                  value={createForm.district_id}
+                  onChange={(e) => setCreateForm({ ...createForm, district_id: e.target.value })}
+                  className="w-full p-2 border border-[#D9E3EC] rounded bg-[#F4F8FC] font-bold focus:border-[#35698F] focus:outline-none"
+                  required
+                >
+                  {DISTRICT_OPTIONS.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name} District
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#64748B] uppercase mb-1">
+                  Resource Requested:
+                </label>
+                <select
+                  value={createForm.resource_type}
+                  onChange={(e) => setCreateForm({ ...createForm, resource_type: e.target.value })}
+                  className="w-full p-2 border border-[#D9E3EC] rounded bg-[#F4F8FC] font-bold focus:border-[#35698F] focus:outline-none"
+                  required
+                >
+                  <option value="BOAT">Rescue Boat (units)</option>
+                  <option value="AMBULANCE">Ambulance (units)</option>
+                  <option value="GENERATOR">Power Generator (units)</option>
+                  <option value="FOOD_PACKET">Food Packet (packets)</option>
+                  <option value="DRINKING_WATER">Drinking Water (liters)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#64748B] uppercase mb-1">
+                  Required Quantity:
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={createForm.quantity_needed}
+                  onChange={(e) => setCreateForm({ ...createForm, quantity_needed: e.target.value })}
+                  className="w-full p-2 border border-[#D9E3EC] rounded bg-[#F4F8FC] font-bold focus:border-[#35698F] focus:outline-none"
+                  placeholder="e.g. 1000"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#64748B] uppercase mb-1">
+                  Target Deadline (UTC Priority Derivation):
+                </label>
+                <input
+                  type="datetime-local"
+                  value={createForm.deadline}
+                  onChange={(e) => setCreateForm({ ...createForm, deadline: e.target.value })}
+                  className="w-full p-2 border border-[#D9E3EC] rounded bg-[#F4F8FC] font-bold focus:border-[#35698F] focus:outline-none"
+                  required
+                />
+                <p className="text-[10px] text-[#64748B] mt-1">
+                  * System auto-calculates CRITICAL (≤2h), HIGH (≤6h), MEDIUM (≤24h), or LOW.
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-[#D9E3EC] flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-4 py-2 bg-[#64748B] hover:bg-[#475569] text-white rounded font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createLoading}
+                  className="px-4 py-2 bg-[#35698F] hover:bg-[#255273] text-white rounded font-bold flex items-center gap-1.5 shadow-2xs"
+                >
+                  {createLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#FFE082]" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 text-[#FFE082]" />
+                      <span>Submit Requisition</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* INSPECTION SLIDE-OVER */}
       {selectedNeed && (
@@ -455,16 +653,16 @@ export default function Needs() {
                 <div className="bg-[#F4F8FC] border border-[#D9E3EC] rounded p-3 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-[#64748B]">Total Quantity Required:</span>
-                    <strong className="text-[#243447]">{selectedNeed.quantity_needed.toLocaleString()} {selectedNeed.unit}</strong>
+                    <strong className="text-[#243447]">{Number(selectedNeed.quantity_needed || 0).toLocaleString()} {selectedNeed.unit}</strong>
                   </div>
                   <div className="flex justify-between text-[#2E7D32]">
                     <span>Fulfilled Quantity:</span>
-                    <strong className="font-bold">{selectedNeed.quantity_fulfilled.toLocaleString()} {selectedNeed.unit}</strong>
+                    <strong className="font-bold">{Number(selectedNeed.quantity_fulfilled || 0).toLocaleString()} {selectedNeed.unit}</strong>
                   </div>
                   <div className="flex justify-between text-[#C62828] text-sm border-t border-[#D9E3EC] pt-1">
                     <span className="font-bold">Remaining Deficit:</span>
                     <strong className="font-bold font-mono">
-                      {(selectedNeed.quantity_needed - selectedNeed.quantity_fulfilled).toLocaleString()} {selectedNeed.unit}
+                      {((Number(selectedNeed.quantity_needed) || 0) - (Number(selectedNeed.quantity_fulfilled) || 0)).toLocaleString()} {selectedNeed.unit}
                     </strong>
                   </div>
                 </div>
