@@ -31,6 +31,23 @@ logger = logging.getLogger("sahayog")
 async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle events."""
     logger.info("SAHAYOG backend starting up — %s v%s", settings.app_name, settings.app_version)
+
+    # Auto-initialize database extension, migrations & seed data on startup (Free tier friendly)
+    try:
+        async with async_engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+
+        from alembic.config import Config
+        from alembic import command
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+
+        from scripts.seed_data import run_seed
+        run_seed()
+        logger.info("Database auto-initialization & seeding completed successfully.")
+    except Exception as init_err:
+        logger.warning("Automatic DB initialization notice: %s", init_err)
+
     yield
     logger.info("SAHAYOG backend shutting down")
     await async_engine.dispose()
