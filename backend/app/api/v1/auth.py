@@ -53,6 +53,19 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == request.email))
     user = result.scalar_one_or_none()
 
+    if user is None:
+        # Check if database has 0 users (unseeded production DB)
+        all_users = (await db.execute(select(User))).scalars().all()
+        if not all_users:
+            logger.info("Empty database detected during login. Triggering automatic seeding...")
+            try:
+                from scripts.seed_data import run_seed
+                run_seed()
+                result = await db.execute(select(User).where(User.email == request.email))
+                user = result.scalar_one_or_none()
+            except Exception as seed_err:
+                logger.error("Auto-seeding on login failed: %s", seed_err)
+
     if user is None or not verify_password(request.password, user.password_hash):
         logger.warning("Failed login attempt for email: %s", request.email)
         raise HTTPException(
