@@ -45,8 +45,14 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 async def auto_seed_if_empty(db: AsyncSession):
-    """Auto-seed default districts, agencies, and users via AsyncSession if empty."""
+    """Auto-create tables if missing and seed default districts, agencies, and users via AsyncSession."""
     try:
+        from app.db.base import Base
+        from app.db.database import async_engine
+        import app.models  # noqa: F401
+
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
         # Check districts
         d_cnt = (await db.execute(select(District))).scalars().all()
         if not d_cnt:
