@@ -56,28 +56,57 @@ async def seed_force(db: AsyncSession = Depends(get_db)):
             await conn.run_sync(Base.metadata.create_all)
         logs.append("create_all ok")
 
+        # 1. Districts
+        district_list = [
+            (uuid.UUID('70d4b8aa-050d-584c-b7f0-faea542083d7'), "Kota", "Rajasthan", 25.2138, 75.8648),
+            (uuid.UUID('7d015e2d-e657-5302-9ad8-3201ddb853a6'), "Bundi", "Rajasthan", 25.4415, 75.6450),
+            (uuid.UUID('42c99de7-fffc-51db-a2dc-d72b5848d5ea'), "Baran", "Rajasthan", 25.1011, 76.5132),
+            (uuid.UUID('405fcfda-0929-5f19-9f80-b42f9c298021'), "Jhalawar", "Rajasthan", 24.5969, 76.1600),
+        ]
+        for did, dname, st, lat, lng in district_list:
+            ex = (await db.execute(select(District).where(District.id == did))).scalar_one_or_none()
+            if not ex:
+                db.add(District(id=did, name=dname, state=st, latitude=lat, longitude=lng))
+        await db.commit()
+        logs.append("districts ok")
+
+        # 2. Agencies
+        agency_list = [
+            (uuid.UUID('f7f2d306-3499-5527-b5a6-845e2b290fa6'), "NDRF Battalion 5", "NDRF", {"phone": "+91-141-2750000"}),
+            (uuid.UUID('7a155fd1-7fce-5327-802c-4a3129155b44'), "Indian Army - Jaipur Division", "ARMY", {"phone": "+91-141-2200000"}),
+            (uuid.UUID('e1026bb4-5a7a-594a-81a9-39dc62a12267'), "Relief Foundation India", "NGO", {"phone": "+91-141-2300000"}),
+            (uuid.UUID('71ee4cbc-9099-5efe-852a-ba68417838d0'), "Rajasthan State Disaster Management Authority", "STATE_AUTHORITY", {"phone": "+91-141-2227296"}),
+        ]
+        for aid, aname, atype, cinfo in agency_list:
+            ex = (await db.execute(select(Agency).where(Agency.id == aid))).scalar_one_or_none()
+            if not ex:
+                db.add(Agency(id=aid, name=aname, type=atype, contact_info=cinfo))
+        await db.commit()
+        logs.append("agencies ok")
+
+        # 3. Users
         u_list = [
             (uuid.UUID('a0000000-0000-0000-0000-000000000001'), None, "System Administrator", "admin@sahayog.gov.in", "SUPER_ADMIN", "Admin@123"),
-            (uuid.UUID('a0000000-0000-0000-0000-000000000002'), None, "Rajesh Kumar", "rajesh.kumar@sdma.rajasthan.gov.in", "STATE_OPERATOR", "StateOp@123"),
-            (uuid.UUID('a0000000-0000-0000-0000-000000000003'), None, "Col. Anil Sharma", "anil.sharma@ndrf.gov.in", "AGENCY_ADMIN", "NdrfAdmin@123"),
-            (uuid.UUID('a0000000-0000-0000-0000-000000000005'), None, "Brig. Vikram Singh", "vikram.singh@army.mil.in", "AGENCY_ADMIN", "ArmyAdmin@123"),
-            (uuid.UUID('a0000000-0000-0000-0000-000000000007'), None, "Priya Mehta", "priya.mehta@relieffoundation.org", "AGENCY_ADMIN", "NgoAdmin@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000002'), uuid.UUID('71ee4cbc-9099-5efe-852a-ba68417838d0'), "Rajesh Kumar", "rajesh.kumar@sdma.rajasthan.gov.in", "STATE_OPERATOR", "StateOp@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000003'), uuid.UUID('f7f2d306-3499-5527-b5a6-845e2b290fa6'), "Col. Anil Sharma", "anil.sharma@ndrf.gov.in", "AGENCY_ADMIN", "NdrfAdmin@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000005'), uuid.UUID('7a155fd1-7fce-5327-802c-4a3129155b44'), "Brig. Vikram Singh", "vikram.singh@army.mil.in", "AGENCY_ADMIN", "ArmyAdmin@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000007'), uuid.UUID('e1026bb4-5a7a-594a-81a9-39dc62a12267'), "Priya Mehta", "priya.mehta@relieffoundation.org", "AGENCY_ADMIN", "NgoAdmin@123"),
         ]
         for uid, agency_id, name, email, role, pwd in u_list:
             ex = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if not ex:
-                try:
-                    db.add(User(id=uid, agency_id=agency_id, name=name, email=email, role=role, password_hash=hash_password(pwd)))
-                    await db.commit()
-                except Exception:
-                    await db.rollback()
+                db.add(User(id=uid, agency_id=agency_id, name=name, email=email, role=role, password_hash=hash_password(pwd)))
+            else:
+                ex.agency_id = agency_id
+                ex.password_hash = hash_password(pwd)
+        await db.commit()
         logs.append("users processed ok")
     except Exception as e:
         logs.append(f"error: {str(e)}")
         await db.rollback()
 
     users = (await db.execute(select(User))).scalars().all()
-    return {"logs": logs, "user_count": len(users), "users": [u.email for u in users]}
+    return {"logs": logs, "user_count": len(users), "users": [{"email": u.email, "role": u.role, "agency_id": str(u.agency_id) if u.agency_id else None} for u in users]}
 
 
 async def auto_seed_if_empty(db: AsyncSession):
