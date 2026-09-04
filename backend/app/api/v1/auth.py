@@ -66,9 +66,12 @@ async def seed_force(db: AsyncSession = Depends(get_db)):
         for uid, agency_id, name, email, role, pwd in u_list:
             ex = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if not ex:
-                db.add(User(id=uid, agency_id=agency_id, name=name, email=email, role=role, password_hash=hash_password(pwd)))
-        await db.commit()
-        logs.append("users committed ok")
+                try:
+                    db.add(User(id=uid, agency_id=agency_id, name=name, email=email, role=role, password_hash=hash_password(pwd)))
+                    await db.commit()
+                except Exception:
+                    await db.rollback()
+        logs.append("users processed ok")
     except Exception as e:
         logs.append(f"error: {str(e)}")
         await db.rollback()

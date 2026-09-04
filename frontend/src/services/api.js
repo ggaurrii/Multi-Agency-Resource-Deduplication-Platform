@@ -3,7 +3,7 @@ import axios from 'axios';
 // Development Mode flag - set to false for real JWT backend authentication
 export const DEV_MODE =false;
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://multi-agency-resource-deduplication-h17n.onrender.com/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
