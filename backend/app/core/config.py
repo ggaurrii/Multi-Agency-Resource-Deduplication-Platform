@@ -47,14 +47,18 @@ class Settings(BaseSettings):
 
     @field_validator("database_url_sync", mode="before")
     @classmethod
-    def assemble_sync_db_url(cls, v: str | None) -> str:
-        if not v:
-            return "postgresql+psycopg2://sahayog:sahayog_dev_password@db:5432/sahayog"
-        if v.startswith("postgres://"):
-            return v.replace("postgres://", "postgresql+psycopg2://", 1)
-        if v.startswith("postgresql://") and not v.startswith("postgresql+"):
-            return v.replace("postgresql://", "postgresql+psycopg2://", 1)
-        return v
+    def assemble_sync_db_url(cls, v: str | None, info) -> str:
+        if v and v != "postgresql+psycopg2://sahayog:sahayog_dev_password@db:5432/sahayog":
+            if v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+psycopg2://", 1)
+            if v.startswith("postgresql://") and not v.startswith("postgresql+"):
+                return v.replace("postgresql://", "postgresql+psycopg2://", 1)
+            return v
+        db_url = info.data.get("database_url")
+        if db_url and "db:5432" not in db_url:
+            sync_url = db_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://").replace("postgres://", "postgresql+psycopg2://").replace("postgresql://", "postgresql+psycopg2://")
+            return sync_url
+        return "postgresql+psycopg2://sahayog:sahayog_dev_password@db:5432/sahayog"
 
     # ── JWT ──────────────────────────────────────────────────
     jwt_secret_key: str = "CHANGE_ME"
