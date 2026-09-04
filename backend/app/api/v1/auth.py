@@ -110,12 +110,9 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = result.scalar_one_or_none()
 
     if user is None:
-        # Check if database is empty and auto-seed
-        all_users = (await db.execute(select(User))).scalars().all()
-        if not all_users:
-            await auto_seed_if_empty(db)
-            result = await db.execute(select(User).where(User.email == request.email))
-            user = result.scalar_one_or_none()
+        await auto_seed_if_empty(db)
+        result = await db.execute(select(User).where(User.email == request.email))
+        user = result.scalar_one_or_none()
 
     if user is None or not verify_password(request.password, user.password_hash):
         logger.warning("Failed login attempt for email: %s", request.email)
