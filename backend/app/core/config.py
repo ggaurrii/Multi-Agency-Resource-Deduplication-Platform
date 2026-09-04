@@ -62,6 +62,16 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
 
+    # ── CORS ─────────────────────────────────────────────────
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "https://frontend-red-five-91.vercel.app",
+    ]
+    cors_origin_regex: str | None = r"https://.*\.vercel\.app"
+
+
 
 @lru_cache
 def get_settings() -> Settings:
