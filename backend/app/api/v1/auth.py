@@ -47,13 +47,16 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.get("/seed-status")
 async def seed_status(db: AsyncSession = Depends(get_db)):
     """Check seeded users count and trigger auto-seed if empty."""
-    users = (await db.execute(select(User))).scalars().all()
-    if not users:
+    err_msg = None
+    try:
         await auto_seed_if_empty(db)
-        users = (await db.execute(select(User))).scalars().all()
+    except Exception as e:
+        err_msg = str(e)
+    users = (await db.execute(select(User))).scalars().all()
     return {
         "user_count": len(users),
         "users": [{"email": u.email, "role": u.role} for u in users],
+        "seed_error": err_msg,
     }
 
 
@@ -110,6 +113,7 @@ async def auto_seed_if_empty(db: AsyncSession):
     except Exception as e:
         logger.error("Async database auto-seeding error: %s", e)
         await db.rollback()
+        raise e
 
 
 @router.post(
