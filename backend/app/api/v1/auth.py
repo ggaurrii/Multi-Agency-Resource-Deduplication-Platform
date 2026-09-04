@@ -56,16 +56,19 @@ async def seed_force(db: AsyncSession = Depends(get_db)):
             await conn.run_sync(Base.metadata.create_all)
         logs.append("create_all ok")
 
-        u = User(
-            id=uuid.UUID('a0000000-0000-0000-0000-000000000002'),
-            name="Rajesh Kumar",
-            email="rajesh.kumar@sdma.rajasthan.gov.in",
-            role="STATE_OPERATOR",
-            password_hash=hash_password("StateOp@123"),
-        )
-        db.add(u)
+        u_list = [
+            (uuid.UUID('a0000000-0000-0000-0000-000000000001'), None, "System Administrator", "admin@sahayog.gov.in", "SUPER_ADMIN", "Admin@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000002'), None, "Rajesh Kumar", "rajesh.kumar@sdma.rajasthan.gov.in", "STATE_OPERATOR", "StateOp@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000003'), None, "Col. Anil Sharma", "anil.sharma@ndrf.gov.in", "AGENCY_ADMIN", "NdrfAdmin@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000005'), None, "Brig. Vikram Singh", "vikram.singh@army.mil.in", "AGENCY_ADMIN", "ArmyAdmin@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000007'), None, "Priya Mehta", "priya.mehta@relieffoundation.org", "AGENCY_ADMIN", "NgoAdmin@123"),
+        ]
+        for uid, agency_id, name, email, role, pwd in u_list:
+            ex = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+            if not ex:
+                db.add(User(id=uid, agency_id=agency_id, name=name, email=email, role=role, password_hash=hash_password(pwd)))
         await db.commit()
-        logs.append("user committed ok")
+        logs.append("users committed ok")
     except Exception as e:
         logs.append(f"error: {str(e)}")
         await db.rollback()
