@@ -19,12 +19,16 @@ from app.core.dependencies import get_current_user
 from app.core.security import (
     create_access_token,
     create_refresh_token,
+    hash_password,
     hash_refresh_token,
     verify_password,
 )
 from app.db.session import get_db
+from app.models.agency import Agency
+from app.models.district import District
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
+import uuid
 from app.schemas.auth import (
     LoginRequest,
     LoginResponse,
@@ -38,6 +42,52 @@ logger = logging.getLogger("sahayog.auth")
 settings = get_settings()
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+async def auto_seed_if_empty(db: AsyncSession):
+    """Auto-seed default districts, agencies, and users via AsyncSession if empty."""
+    try:
+        # Check districts
+        d_cnt = (await db.execute(select(District))).scalars().all()
+        if not d_cnt:
+            districts = [
+                District(id=uuid.UUID('70d4b8aa-050d-584c-b7f0-faea542083d7'), name="Kota", state="Rajasthan", latitude=25.2138, longitude=75.8648),
+                District(id=uuid.UUID('7d015e2d-e657-5302-9ad8-3201ddb853a6'), name="Bundi", state="Rajasthan", latitude=25.4415, longitude=75.6450),
+                District(id=uuid.UUID('42c99de7-fffc-51db-a2dc-d72b5848d5ea'), name="Baran", state="Rajasthan", latitude=25.1011, longitude=76.5132),
+                District(id=uuid.UUID('405fcfda-0929-5f19-9f80-b42f9c298021'), name="Jhalawar", state="Rajasthan", latitude=24.5969, longitude=76.1600),
+            ]
+            db.add_all(districts)
+            await db.flush()
+
+        # Check agencies
+        a_cnt = (await db.execute(select(Agency))).scalars().all()
+        if not a_cnt:
+            agencies = [
+                Agency(id=uuid.UUID('f7f2d306-3499-5527-b5a6-845e2b290fa6'), name="NDRF Battalion 5", type="NDRF", contact_info={"phone": "+91-141-2750000"}),
+                Agency(id=uuid.UUID('7a155fd1-7fce-5327-802c-4a3129155b44'), name="Indian Army - Jaipur Division", type="ARMY", contact_info={"phone": "+91-141-2200000"}),
+                Agency(id=uuid.UUID('e1026bb4-5a7a-594a-81a9-39dc62a12267'), name="Relief Foundation India", type="NGO", contact_info={"phone": "+91-141-2300000"}),
+                Agency(id=uuid.UUID('71ee4cbc-9099-5efe-852a-ba68417838d0'), name="Rajasthan State Disaster Management Authority", type="STATE_AUTHORITY", contact_info={"phone": "+91-141-2227296"}),
+            ]
+            db.add_all(agencies)
+            await db.flush()
+
+        # Users
+        u_data = [
+            (uuid.UUID('a0000000-0000-0000-0000-000000000001'), None, "System Administrator", "admin@sahayog.gov.in", "SUPER_ADMIN", "Admin@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000002'), uuid.UUID('71ee4cbc-9099-5efe-852a-ba68417838d0'), "Rajesh Kumar", "rajesh.kumar@sdma.rajasthan.gov.in", "STATE_OPERATOR", "StateOp@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000003'), uuid.UUID('f7f2d306-3499-5527-b5a6-845e2b290fa6'), "Col. Anil Sharma", "anil.sharma@ndrf.gov.in", "AGENCY_ADMIN", "NdrfAdmin@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000005'), uuid.UUID('7a155fd1-7fce-5327-802c-4a3129155b44'), "Brig. Vikram Singh", "vikram.singh@army.mil.in", "AGENCY_ADMIN", "ArmyAdmin@123"),
+            (uuid.UUID('a0000000-0000-0000-0000-000000000007'), uuid.UUID('e1026bb4-5a7a-594a-81a9-39dc62a12267'), "Priya Mehta", "priya.mehta@relieffoundation.org", "AGENCY_ADMIN", "NgoAdmin@123"),
+        ]
+        for uid, agency_id, name, email, role, pwd in u_data:
+            existing = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+            if not existing:
+                db.add(User(id=uid, agency_id=agency_id, name=name, email=email, role=role, password_hash=hash_password(pwd)))
+        await db.commit()
+        logger.info("Async database auto-seeding completed.")
+    except Exception as e:
+        logger.error("Async database auto-seeding error: %s", e)
+        await db.rollback()
 
 
 @router.post(
@@ -54,17 +104,12 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = result.scalar_one_or_none()
 
     if user is None:
-        # Check if database has 0 users (unseeded production DB)
+        # Check if database is empty and auto-seed
         all_users = (await db.execute(select(User))).scalars().all()
         if not all_users:
-            logger.info("Empty database detected during login. Triggering automatic seeding...")
-            try:
-                from scripts.seed_data import run_seed
-                run_seed()
-                result = await db.execute(select(User).where(User.email == request.email))
-                user = result.scalar_one_or_none()
-            except Exception as seed_err:
-                logger.error("Auto-seeding on login failed: %s", seed_err)
+            await auto_seed_if_empty(db)
+            result = await db.execute(select(User).where(User.email == request.email))
+            user = result.scalar_one_or_none()
 
     if user is None or not verify_password(request.password, user.password_hash):
         logger.warning("Failed login attempt for email: %s", request.email)
