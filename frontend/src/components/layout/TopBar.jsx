@@ -1,30 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Bell, Clock, Building2 } from 'lucide-react';
+import { Radio, Bell, Building2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function TopBar({ title, unreadAlertsCount = 0 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [timeStr, setTimeStr] = useState('');
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setTimeStr(
-        now.toLocaleTimeString('en-IN', {
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          timeZoneName: 'short',
-        })
-      );
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <header className="h-13 bg-white border-b border-[#D9E3EC] text-[#243447] px-5 flex items-center justify-between shrink-0 font-sans shadow-2xs">
@@ -43,12 +24,6 @@ export default function TopBar({ title, unreadAlertsCount = 0 }) {
 
       {/* Right control elements */}
       <div className="flex items-center space-x-4 text-xs text-[#64748B] font-mono">
-        {/* Real-time Clock */}
-        <div className="hidden sm:flex items-center space-x-1.5 bg-[#F4F8FC] px-2.5 py-1 rounded border border-[#D9E3EC] text-[#243447] text-[11px]">
-          <Clock className="w-3.5 h-3.5 text-[#35698F]" />
-          <span>{timeStr || 'LIVE UTC/IST'}</span>
-        </div>
-
         {/* Notifications Icon Pill */}
         <div
           onClick={() => navigate('/notifications')}

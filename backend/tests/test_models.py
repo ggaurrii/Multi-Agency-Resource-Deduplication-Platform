@@ -18,19 +18,19 @@ import app.models as models
 
 
 class TestModelRegistration:
-    """Verify all 10 models are registered in Base.metadata."""
+    """Verify all 12 models are registered in Base.metadata."""
 
     def test_all_tables_registered(self):
         expected = {
             "agencies", "users", "districts", "resources", "needs",
             "allocations", "allocation_items", "refresh_tokens",
-            "notifications", "audit_logs",
+            "notifications", "audit_logs", "field_reports", "damage_assessments",
         }
         actual = set(Base.metadata.tables.keys())
         assert expected == actual, f"Missing tables: {expected - actual}, Extra: {actual - expected}"
 
     def test_model_count(self):
-        assert len(Base.metadata.tables) == 10
+        assert len(Base.metadata.tables) == 12
 
 
 class TestAgencyModel:

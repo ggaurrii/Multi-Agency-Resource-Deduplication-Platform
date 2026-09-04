@@ -37,7 +37,9 @@ from app.models import (
     Allocation,
     AllocationItem,
     AuditLog,
+    DamageAssessment,
     District,
+    FieldReport,
     Need,
     Notification,
     Resource,
@@ -606,6 +608,160 @@ def seed_audit_logs(session: Session) -> None:
         print(f"  ✅ AuditLog '{log['action']}' created")
 
 
+def seed_field_reports(session: Session) -> None:
+    """Seed initial realistic ground incident field reports for SIH26206 demo."""
+    reports = [
+        {
+            "id": make_id("fr-101-kota-embankment"),
+            "title": "Chambal River Embankment Breach at Sector 4",
+            "disaster_type": "FLOOD",
+            "severity": "CRITICAL",
+            "district_id": make_id("district-kota"),
+            "location_name": "Kota Sector 4 (Old Bridge Side)",
+            "latitude": 25.2050,
+            "longitude": 75.8580,
+            "description": "Water level exceeded danger mark by 1.4m. Flash flood submerging 120 residential structures.",
+            "status": "SUBMITTED",
+            "reported_by": make_id("user-state-op1"),
+        },
+        {
+            "id": make_id("fr-102-baran-landslide"),
+            "title": "NH-52 Highway Debris Landslide & Washout",
+            "disaster_type": "LANDSLIDE",
+            "severity": "HIGH",
+            "district_id": make_id("district-baran"),
+            "location_name": "Baran-Kota Corridor (Mile 42)",
+            "latitude": 25.1500,
+            "longitude": 76.1000,
+            "description": "Heavy rockfall and road erosion. Stranding 15 vehicles.",
+            "status": "VERIFIED",
+            "reported_by": make_id("user-ndrf-admin"),
+        },
+        {
+            "id": make_id("fr-103-bundi-substation"),
+            "title": "Sub-station Transformer Inundation",
+            "disaster_type": "INFRASTRUCTURE_DAMAGE",
+            "severity": "HIGH",
+            "district_id": make_id("district-bundi"),
+            "location_name": "Bundi Central Grid Substation",
+            "latitude": 25.4200,
+            "longitude": 75.6350,
+            "description": "Transformer submerged causing localized power blackout for 4,000 households.",
+            "status": "RESPONDED",
+            "reported_by": make_id("user-army-admin"),
+        },
+        {
+            "id": make_id("fr-104-jhalawar-water"),
+            "title": "Relief Shelter Water Contamination Crisis",
+            "disaster_type": "MEDICAL_EMERGENCY",
+            "severity": "MEDIUM",
+            "district_id": make_id("district-jhalawar"),
+            "location_name": "Jhalawar Sector 2 Shelter",
+            "latitude": 24.5850,
+            "longitude": 76.1550,
+            "description": "Clean drinking water shortage reported for 800 displaced residents.",
+            "status": "RESOLVED",
+            "reported_by": make_id("user-ngo-admin"),
+        },
+    ]
+    for rep in reports:
+        existing = session.execute(select(FieldReport).where(FieldReport.id == rep["id"])).scalar_one_or_none()
+        if existing:
+            print(f"  ⏭  FieldReport '{rep['title']}' already exists")
+            continue
+        r_obj = FieldReport(**rep)
+        session.add(r_obj)
+        print(f"  ✅ FieldReport '{rep['title']}' created")
+
+
+def seed_damage_assessments(session: Session) -> None:
+    """Seed initial post-disaster damage assessments for SIH26206 demo."""
+    from app.services.damage_assessment_service import calculate_recovery_priority_score
+
+    assessments = [
+        {
+            "id": make_id("da-101-kota-hospital"),
+            "field_report_id": make_id("fr-101-kota-embankment"),
+            "title": "MBS Government Hospital Kota Outpatient & Basement Damage",
+            "district_id": make_id("district-kota"),
+            "location_name": "MBS Hospital Campus, Kota",
+            "damage_category": "HOSPITAL",
+            "severity": "CRITICAL",
+            "affected_population": 8500,
+            "estimated_cost_inr": 4500000,
+            "latitude": 25.2180,
+            "longitude": 75.8720,
+            "description": "Basement medical store submerged. Backup generator damaged by floodwaters.",
+            "status": "RESTORATION_STARTED",
+            "assessed_by": make_id("user-state-op1"),
+        },
+        {
+            "id": make_id("da-102-baran-bridge"),
+            "title": "NH-52 Parvati River Highway Bridge Structural Erosion",
+            "district_id": make_id("district-baran"),
+            "location_name": "NH-52 Parvati Bridge, Baran",
+            "damage_category": "BRIDGE",
+            "severity": "CRITICAL",
+            "affected_population": 12000,
+            "estimated_cost_inr": 12500000,
+            "latitude": 25.1012,
+            "longitude": 76.5132,
+            "description": "Pier pillar scouring reported due to high velocity river discharge.",
+            "status": "PRIORITIZED",
+            "assessed_by": make_id("user-ndrf-admin"),
+        },
+        {
+            "id": make_id("da-103-bundi-substation"),
+            "title": "Bundi Central Grid Substation Transformer Damage",
+            "field_report_id": make_id("fr-103-bundi-substation"),
+            "district_id": make_id("district-bundi"),
+            "location_name": "Bundi Grid Substation",
+            "damage_category": "POWER_INFRASTRUCTURE",
+            "severity": "HIGH",
+            "affected_population": 15000,
+            "estimated_cost_inr": 3800000,
+            "latitude": 25.4200,
+            "longitude": 75.6350,
+            "description": "33kV main transformer inundated. Temporary bypass routing active.",
+            "status": "RESTORED",
+            "assessed_by": make_id("user-army-admin"),
+        },
+        {
+            "id": make_id("da-104-jhalawar-school"),
+            "title": "Jhalawar Primary Government School Shelter Roof Collapse",
+            "district_id": make_id("district-jhalawar"),
+            "location_name": "Sector 2 Primary School, Jhalawar",
+            "damage_category": "SCHOOL",
+            "severity": "MEDIUM",
+            "affected_population": 1200,
+            "estimated_cost_inr": 950000,
+            "latitude": 24.5850,
+            "longitude": 76.1550,
+            "description": "Boundary wall and roof boundary damaged due to heavy rainwater accumulation.",
+            "status": "VERIFIED",
+            "reported_by": make_id("user-ngo-admin"),
+        },
+    ]
+
+    for item in assessments:
+        existing = session.execute(select(DamageAssessment).where(DamageAssessment.id == item["id"])).scalar_one_or_none()
+        if existing:
+            print(f"  ⏭  DamageAssessment '{item['title']}' already exists")
+            continue
+
+        score, prio_lvl, _ = calculate_recovery_priority_score(
+            severity=item["severity"],
+            damage_category=item["damage_category"],
+            affected_population=item["affected_population"],
+        )
+        item["recovery_score"] = score
+        item["priority_level"] = prio_lvl
+
+        d_obj = DamageAssessment(**item)
+        session.add(d_obj)
+        print(f"  ✅ DamageAssessment '{item['title']}' created")
+
+
 def run_seed() -> None:
     """Execute all seed operations in order."""
     print("=" * 60)
@@ -638,6 +794,14 @@ def run_seed() -> None:
             seed_needs(session)
             session.flush()
 
+            print("\nSeeding field reports...")
+            seed_field_reports(session)
+            session.flush()
+
+            print("\nSeeding damage assessments...")
+            seed_damage_assessments(session)
+            session.flush()
+
             print("\nSeeding notifications...")
             seed_notifications(session)
             session.flush()
@@ -657,6 +821,8 @@ def run_seed() -> None:
                 "Users": session.query(User).count(),
                 "Resources": session.query(Resource).count(),
                 "Needs": session.query(Need).count(),
+                "FieldReports": session.query(FieldReport).count(),
+                "DamageAssessments": session.query(DamageAssessment).count(),
                 "Notifications": session.query(Notification).count(),
                 "AuditLogs": session.query(AuditLog).count(),
             }
@@ -672,3 +838,5 @@ def run_seed() -> None:
 
 if __name__ == "__main__":
     run_seed()
+
+

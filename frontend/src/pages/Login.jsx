@@ -61,9 +61,7 @@ export default function Login() {
           <p className="text-xs text-[#64748B] font-medium">
             State Emergency Operations Center — Hadoti Disaster Relief
           </p>
-          <span className="inline-block px-2.5 py-0.5 bg-[#DCECF8] text-[#1E425E] border border-[#8DB9D9] text-[10px] font-mono font-bold rounded">
-            JWT AUTH ACTIVE
-          </span>
+
         </div>
 
         {/* Form Body */}
