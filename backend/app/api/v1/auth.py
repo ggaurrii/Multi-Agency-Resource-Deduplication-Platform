@@ -44,6 +44,19 @@ settings = get_settings()
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+@router.get("/seed-status")
+async def seed_status(db: AsyncSession = Depends(get_db)):
+    """Check seeded users count and trigger auto-seed if empty."""
+    users = (await db.execute(select(User))).scalars().all()
+    if not users:
+        await auto_seed_if_empty(db)
+        users = (await db.execute(select(User))).scalars().all()
+    return {
+        "user_count": len(users),
+        "users": [{"email": u.email, "role": u.role} for u in users],
+    }
+
+
 async def auto_seed_if_empty(db: AsyncSession):
     """Auto-create tables if missing and seed default districts, agencies, and users via AsyncSession."""
     try:
