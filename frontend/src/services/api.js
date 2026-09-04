@@ -215,6 +215,58 @@ export const sahayogApi = {
     const response = await api.get('/audit-logs', { params });
     return response.data;
   },
+
+  // Field Reports Endpoints
+  getFieldReports: async (params = {}) => {
+    const response = await api.get('/field-reports', { params });
+    return response.data;
+  },
+
+  getFieldReport: async (id) => {
+    const response = await api.get(`/field-reports/${id}`);
+    return response.data;
+  },
+
+  createFieldReport: async (data) => {
+    const response = await api.post('/field-reports', data);
+    return response.data;
+  },
+
+  updateFieldReport: async (id, data) => {
+    const response = await api.patch(`/field-reports/${id}`, data);
+    return response.data;
+  },
+
+  convertFieldReportToNeed: async (id, needData) => {
+    const response = await api.post(`/field-reports/${id}/convert-to-need`, needData);
+    return response.data;
+  },
+
+  // Post Disaster Endpoints
+  getPostDisasterCases: async (params = {}) => {
+    const response = await api.get('/post-disaster', { params });
+    return response.data;
+  },
+
+  getPostDisasterCase: async (id) => {
+    const response = await api.get(`/post-disaster/${id}`);
+    return response.data;
+  },
+
+  createPostDisasterCase: async (data) => {
+    const response = await api.post('/post-disaster', data);
+    return response.data;
+  },
+
+  updatePostDisasterCase: async (id, data) => {
+    const response = await api.patch(`/post-disaster/${id}`, data);
+    return response.data;
+  },
+
+  startRecoveryAssessmentFromFieldReport: async (fieldReportId, data) => {
+    const response = await api.post(`/field-reports/${fieldReportId}/start-recovery-assessment`, data);
+    return response.data;
+  },
 };
 
 export default sahayogApi;

@@ -63,7 +63,9 @@ app.add_middleware(
 from app.api.v1.allocations import router as allocations_router
 from app.api.v1.audit_logs import router as audit_logs_router
 from app.api.v1.auth import router as auth_router  # noqa: E402
+from app.api.v1.damage_assessments import router as damage_assessments_router, field_report_recovery_router
 from app.api.v1.dashboard import router as dashboard_router
+from app.api.v1.field_reports import router as field_reports_router
 from app.api.v1.needs import router as needs_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.resources import router as resources_router
@@ -75,6 +77,9 @@ app.include_router(allocations_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
 app.include_router(audit_logs_router, prefix="/api/v1")
+app.include_router(field_reports_router, prefix="/api/v1")
+app.include_router(damage_assessments_router, prefix="/api/v1")
+app.include_router(field_report_recovery_router, prefix="/api/v1")
 
 
 # ── Health endpoints ─────────────────────────────────────────

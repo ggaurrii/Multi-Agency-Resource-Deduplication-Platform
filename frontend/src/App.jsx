@@ -14,6 +14,9 @@ import Agencies from './pages/Agencies';
 import DisasterMap from './pages/DisasterMap';
 import Notifications from './pages/Notifications';
 import AuditLogs from './pages/AuditLogs';
+import RiskMitigation from './pages/RiskMitigation';
+import FieldReports from './pages/FieldReports';
+import PostDisaster from './pages/PostDisaster';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -49,6 +52,9 @@ export default function App() {
 
           {/* Protected Operational Routes */}
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/risk-mitigation" element={<ProtectedRoute><RiskMitigation /></ProtectedRoute>} />
+          <Route path="/field-reports" element={<ProtectedRoute><FieldReports /></ProtectedRoute>} />
+          <Route path="/post-disaster" element={<ProtectedRoute><PostDisaster /></ProtectedRoute>} />
           <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
           <Route path="/pool" element={<ProtectedRoute><ResourcePool /></ProtectedRoute>} />
           <Route path="/resource-pool" element={<ProtectedRoute><ResourcePool /></ProtectedRoute>} />
