@@ -66,7 +66,7 @@ async def seed_force(db: AsyncSession = Depends(get_db)):
         for did, dname, st, lat, lng in district_list:
             ex = (await db.execute(select(District).where(District.id == did))).scalar_one_or_none()
             if not ex:
-                db.add(District(id=did, name=dname, state=st, latitude=lat, longitude=lng))
+                db.add(District(id=did, name=dname, state=st, centroid_lat=lat, centroid_lng=lng))
         await db.commit()
         logs.append("districts ok")
 
@@ -129,7 +129,7 @@ async def auto_seed_if_empty(db: AsyncSession):
         for did, dname, st, lat, lng in district_list:
             ex = (await db.execute(select(District).where(District.id == did))).scalar_one_or_none()
             if not ex:
-                db.add(District(id=did, name=dname, state=st, latitude=lat, longitude=lng))
+                db.add(District(id=did, name=dname, state=st, centroid_lat=lat, centroid_lng=lng))
         await db.commit()
 
         # 2. Agencies
