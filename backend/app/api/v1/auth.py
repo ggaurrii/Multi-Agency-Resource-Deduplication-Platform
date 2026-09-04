@@ -44,20 +44,34 @@ settings = get_settings()
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.get("/seed-status")
-async def seed_status(db: AsyncSession = Depends(get_db)):
-    """Check seeded users count and trigger auto-seed if empty."""
-    err_msg = None
+@router.get("/seed-force")
+async def seed_force(db: AsyncSession = Depends(get_db)):
+    """Force seed users into PostgreSQL database and return diagnostic details."""
+    from app.db.base import Base
+    from app.db.database import async_engine
+
+    logs = []
     try:
-        await auto_seed_if_empty(db)
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logs.append("create_all ok")
+
+        u = User(
+            id=uuid.UUID('a0000000-0000-0000-0000-000000000002'),
+            name="Rajesh Kumar",
+            email="rajesh.kumar@sdma.rajasthan.gov.in",
+            role="STATE_OPERATOR",
+            password_hash=hash_password("StateOp@123"),
+        )
+        db.add(u)
+        await db.commit()
+        logs.append("user committed ok")
     except Exception as e:
-        err_msg = str(e)
+        logs.append(f"error: {str(e)}")
+        await db.rollback()
+
     users = (await db.execute(select(User))).scalars().all()
-    return {
-        "user_count": len(users),
-        "users": [{"email": u.email, "role": u.role} for u in users],
-        "seed_error": err_msg,
-    }
+    return {"logs": logs, "user_count": len(users), "users": [u.email for u in users]}
 
 
 async def auto_seed_if_empty(db: AsyncSession):
