@@ -83,7 +83,20 @@ app.include_router(damage_assessments_router, prefix="/api/v1")
 app.include_router(field_report_recovery_router, prefix="/api/v1")
 
 
-# ── Health endpoints ─────────────────────────────────────────
+# ── Root & Health endpoints ──────────────────────────────────
+@app.get("/", tags=["Root"])
+async def root():
+    """Root endpoint for Render health check."""
+    return {
+        "status": "online",
+        "service": settings.app_name,
+        "version": settings.app_version,
+        "docs": "/docs",
+        "health": "/health",
+        "api_v1": "/api/v1",
+    }
+
+
 @app.get("/health", tags=["Health"])
 async def health_check():
     """Basic liveness probe."""
