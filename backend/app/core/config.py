@@ -43,8 +43,20 @@ class Settings(BaseSettings):
             v = v.replace("postgres://", "postgresql+asyncpg://", 1)
         elif v.startswith("postgresql://") and not v.startswith("postgresql+"):
             v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
-        if "sslmode=" in v:
-            v = v.replace("sslmode=require", "ssl=require").replace("sslmode=prefer", "ssl=require").replace("sslmode=disable", "ssl=disable")
+        
+        from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+        parsed = urlparse(v)
+        if parsed.query:
+            qs = parse_qs(parsed.query)
+            new_qs = {}
+            for k, val_list in qs.items():
+                if k in ("sslmode", "channel_binding", "gssencmode", "target_session_attrs"):
+                    if k == "sslmode" and val_list and val_list[0] in ("require", "prefer", "verify-full", "verify-ca"):
+                        new_qs["ssl"] = ["require"]
+                else:
+                    new_qs[k] = val_list
+            new_query = urlencode(new_qs, doseq=True)
+            v = urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment))
         return v
 
     @field_validator("database_url_sync", mode="before")
